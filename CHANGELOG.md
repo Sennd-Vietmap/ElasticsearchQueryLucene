@@ -25,6 +25,12 @@ All notable changes to this project will be documented in this file.
         - Actual Lucene search execution with result materialization
         - Support for Skip/Take in query execution
         - 6 comprehensive CRUD test cases
+    - **Implemented Advanced Search Features (Phase 7)**:
+        - `OrderBy`, `OrderByDescending`, `ThenBy`, `ThenByDescending` translation and execution
+        - Automatic Lucene `Sort` object creation with correct type mapping (Int32, Int64, Single, Double)
+        - `EF.Functions.LuceneMatch` extension for raw Lucene query syntax integration
+        - Verify raw query translation in LINQ pipeline
+        - 42 passing tests covering all phases
     - Integrated `IndexWriter` lifecycle management within the EF Core `ILuceneDatabase`.
     - Added comprehensive unit tests for provider configuration and metadata mapping.
 
