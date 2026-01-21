@@ -68,7 +68,8 @@ An experimental Entity Framework Core provider that enables using Lucene.Net as 
 - ✅ **Phase 1-3**: Foundation, Metadata Mapping, and Update Pipeline (Create) completed
 - ✅ **Phase 4**: Query Pipeline Materialization completed
 - ✅ **Phase 5**: LINQ Translation (Read) completed
-- 🚧 **Phase 6-7**: Full CRUD and Advanced Features (In Progress)
+- ✅ **Phase 6**: Full CRUD & State Management completed
+- 🚧 **Phase 7**: Advanced Features (In Progress)
 
 ### Features Implemented
 - Fluent API and Data Annotations for Lucene field configuration
@@ -81,6 +82,12 @@ An experimental Entity Framework Core provider that enables using Lucene.Net as 
   - `FirstOrDefault()` with optional predicates
   - Automatic Lucene special character escaping
   - Proper range query syntax
+- **Full CRUD operations**:
+  - Create: Add entities to Lucene index
+  - Read: Query execution with LINQ translation
+  - Update: Modify existing documents
+  - Delete: Remove documents from index
+  - Bulk operations support
 
 ### Example Usage (Preview)
 ```csharp

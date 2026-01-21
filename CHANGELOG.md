@@ -17,6 +17,14 @@ All notable changes to this project will be documented in this file.
         - Automatic Lucene special character escaping
         - Proper range query syntax with inclusive/exclusive brackets
         - 27 passing tests for query translation functionality
+    - **Implemented Full CRUD & State Management (Phase 6)**:
+        - Update operation using Lucene.Net `UpdateDocument`
+        - Delete operation using Lucene.Net `DeleteDocuments`
+        - Primary key extraction with `GetKeyValue` helper
+        - Query execution infrastructure with `LuceneShapedQueryCompilingExpressionVisitor`
+        - Actual Lucene search execution with result materialization
+        - Support for Skip/Take in query execution
+        - 6 comprehensive CRUD test cases
     - Integrated `IndexWriter` lifecycle management within the EF Core `ILuceneDatabase`.
     - Added comprehensive unit tests for provider configuration and metadata mapping.
 
