@@ -1,4 +1,6 @@
+using System;
 using System.Collections.Generic;
+using System.Linq;
 using System.Threading;
 using System.Threading.Tasks;
 using ElasticsearchQueryLucene.EntityFrameworkCore.Infrastructure;
@@ -33,11 +35,28 @@ public class LuceneDatabase : ILuceneDatabase
         var count = 0;
         foreach (var entry in entries)
         {
-            if (entry.EntityState == EntityState.Added)
+            switch (entry.EntityState)
             {
-                var doc = CreateDocument(entry);
-                writer.AddDocument(doc);
-                count++;
+                case EntityState.Added:
+                    var doc = CreateDocument(entry);
+                    writer.AddDocument(doc);
+                    count++;
+                    break;
+
+                case EntityState.Modified:
+                    var keyValue = GetKeyValue(entry);
+                    var term = new Term("Id", keyValue);
+                    var updatedDoc = CreateDocument(entry);
+                    writer.UpdateDocument(term, updatedDoc);
+                    count++;
+                    break;
+
+                case EntityState.Deleted:
+                    var deleteKeyValue = GetKeyValue(entry);
+                    var deleteTerm = new Term("Id", deleteKeyValue);
+                    writer.DeleteDocuments(deleteTerm);
+                    count++;
+                    break;
             }
         }
 
@@ -76,5 +95,17 @@ public class LuceneDatabase : ILuceneDatabase
         }
 
         return doc;
+    }
+
+    private string GetKeyValue(IUpdateEntry entry)
+    {
+        var keyProperty = entry.EntityType.FindPrimaryKey()?.Properties.FirstOrDefault();
+        if (keyProperty == null)
+        {
+            throw new InvalidOperationException($"Entity type {entry.EntityType.Name} does not have a primary key defined.");
+        }
+
+        var keyValue = entry.GetCurrentValue(keyProperty);
+        return keyValue?.ToString() ?? throw new InvalidOperationException("Primary key value cannot be null.");
     }
 }

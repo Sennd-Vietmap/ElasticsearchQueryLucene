@@ -40,13 +40,16 @@ Mark sure code build successfully before moving to next phase and commit code af
 - [x] Add comprehensive unit tests (15 tests, all passing)
 
 ## Phase 6: Full CRUD & State Management
-- [ ] Implement `UpdateDocument` logic
-- [ ] Handle stable `Key` lookups
-- [ ] Implement `DeleteDocuments`
-- [ ] Verify full CRUD cycle
+- [x] Implement `UpdateDocument` logic (using Lucene.Net UpdateDocument)
+- [x] Handle stable `Key` lookups (GetKeyValue helper method)
+- [x] Implement `DeleteDocuments` (using Lucene.Net DeleteDocuments)
+- [x] Implement query execution in ShapedQueryCompilingExpressionVisitor
+- [x] Add LuceneQueryContext with Directory property
+- [x] Create comprehensive CRUD test suite
+- [ ] Full integration testing (requires additional EF Core infrastructure)
 
 ## Phase 7: Advanced Search Features
-- [ ] Implement `EF.Functions.LuceneMatch`
+- [x] Implement `Skip()` / `Take()` (Pagination) - Already done in Phase 5
 - [ ] Implement `OrderBy` (Sort fields)
-- [ ] Implement `Take()` / `Skip()` (Pagination)
+- [ ] Implement `EF.Functions.LuceneMatch` for raw Lucene queries
 - [ ] Final Integration Demo
