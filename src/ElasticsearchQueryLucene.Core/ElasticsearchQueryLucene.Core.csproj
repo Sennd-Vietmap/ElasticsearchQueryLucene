@@ -5,10 +5,12 @@
     <ImplicitUsings>enable</ImplicitUsings>
     <Nullable>enable</Nullable>
     <PackageId>ElasticsearchQueryLucene.Core</PackageId>
-    <Version>1.2.0</Version>
+    <Title>ElasticsearchQueryLucene</Title>
+    <Version>1.2.2</Version>
     <Authors>Sennd-Vietmap</Authors>
-    <Description>A lightweight .NET library to convert Elasticsearch JSON Query DSL to Lucene Query Syntax.</Description>
-    <PackageTags>elasticsearch;lucene;query;dsl;converter</PackageTags>
+    <Description>A powerful and lightweight logic to convert Elasticsearch Query DSL (JSON) to Lucene Query Syntax. Ideal for migrations and cross-platform search implementations.</Description>
+    <PackageTags>ElasticsearchQueryLucene;elasticsearch;lucene;dsl;converter;query;syntax;search;mapping</PackageTags>
+    <PackageProjectUrl>https://github.com/Sennd-Vietmap/ElasticsearchQueryLucene</PackageProjectUrl>
     <RepositoryUrl>https://github.com/Sennd-Vietmap/ElasticsearchQueryLucene</RepositoryUrl>
     <PackageLicenseExpression>MIT</PackageLicenseExpression>
     <PackageReadmeFile>README.md</PackageReadmeFile>
