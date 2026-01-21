@@ -79,6 +79,8 @@ An experimental Entity Framework Core provider that enables using Lucene.Net as 
 - **LINQ-to-Lucene query translation**:
   - `Where()` with full predicate support (equality, comparison, boolean logic, string methods)
   - `Skip()` and `Take()` for pagination
+  - `OrderBy()`, `OrderByDescending()`, `ThenBy()`, `ThenByDescending()` for sorting
+  - `EF.Functions.LuceneMatch()` for raw Lucene query syntax
   - `FirstOrDefault()` with optional predicates
   - Automatic Lucene special character escaping
   - Proper range query syntax
@@ -117,6 +119,19 @@ public class BookContext : DbContext
 using var context = new BookContext();
 context.Books.Add(new Book { Id = 1, Title = "EF Core in Action", ISBN = "978-1617298363" });
 context.SaveChanges(); // Indexed to Lucene!
+
+// Query Usage
+var results = context.Books
+    .Where(b => b.Title.Contains("Action"))
+    .OrderBy(b => b.ISBN)
+    .Skip(0)
+    .Take(10)
+    .ToList();
+
+// Raw Lucene Match
+var rawResults = context.Books
+    .Where(b => EF.Functions.LuceneMatch(b.Title, "Core OR Entity"))
+    .ToList();
 ```
 
 For detailed progress, see [`task_efcore.md`](task_efcore.md).
