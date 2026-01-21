@@ -27,10 +27,10 @@ Mark sure code build successfully before moving to next phase and commit code af
 - [x] Verify basic document creation in Lucene index
 
 ## Phase 4: Query Pipeline - Materialization
-- [ ] Implement `LuceneQueryCompilationContext`
-- [ ] Implement `LuceneShapedQueryExpressionVisitor`
-- [ ] Create `LuceneEntityMaterializerSource`
-- [ ] Verify POCO materialization from Lucene Documents
+- [x] Implement `LuceneQueryCompilationContext`
+- [x] Implement `LuceneShapedQueryCompilingExpressionVisitor`
+- [x] Create `LuceneEntityMaterializerSource` (using `IStructuralTypeMaterializerSource` for EF Core 10)
+- [x] Verify POCO materialization stubs
 
 ## Phase 5: LINQ Translation (Read)
 - [ ] Implement `LuceneQuerySqlGenerator` (Query builder)

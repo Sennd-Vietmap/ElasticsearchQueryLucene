@@ -39,6 +39,9 @@ public class LuceneDbContextOptionsExtension : IDbContextOptionsExtension
         // Query services required by model builder and runtime
         builder.TryAdd<IQueryContextFactory, Query.LuceneQueryContextFactory>();
         builder.TryAdd<IQueryCompilationContextFactory, Query.LuceneQueryCompilationContextFactory>();
+        builder.TryAdd<IQueryableMethodTranslatingExpressionVisitorFactory, Query.LuceneQueryableMethodTranslatingExpressionVisitorFactory>();
+        builder.TryAdd<IShapedQueryCompilingExpressionVisitorFactory, Query.LuceneShapedQueryCompilingExpressionVisitorFactory>();
+        builder.TryAdd<IStructuralTypeMaterializerSource, Query.LuceneEntityMaterializerSource>();
     }
 
     public virtual void Validate(IDbContextOptions options)

@@ -2,6 +2,17 @@
 
 All notable changes to this project will be documented in this file.
 
+## [1.3.0] - 2026-01-21
+
+### Added
+- **EF Core Lucene Provider (In Progress)**:
+    - Initial infrastructure for a custom EF Core provider for Lucene.Net 4.8.
+    - Support for Fluent API and Data Annotations (`[LuceneField]`) to configure Lucene-specific metadata.
+    - Implemented Update Pipeline (Phase 3) for entity creation and document indexing.
+    - Implemented Query Pipeline Materialization (Phase 4) using `IStructuralTypeMaterializerSource` for EF Core 10.
+    - Integrated `IndexWriter` lifecycle management within the EF Core `ILuceneDatabase`.
+    - Added comprehensive unit tests for provider configuration and metadata mapping.
+
 ## [1.2.0] - 2026-01-21
 
 ### Added

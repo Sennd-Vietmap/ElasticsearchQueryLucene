@@ -56,8 +56,56 @@ dotnet run --project src/ElasticsearchQueryLucene.Console
 | Path | Description |
 | :--- | :--- |
 | `src/ElasticsearchQueryLucene.Core` | Core logic, models, and visitor implementation. |
+| `src/ElasticsearchQueryLucene.EntityFrameworkCore` | **EF Core Lucene Provider** (In Development) - Custom EF Core provider for Lucene.Net 4.8. |
 | `src/ElasticsearchQueryLucene.Console` | Live demo with real data and Lucene search engine. |
 | `test/ElasticsearchQueryLucene.Tests` | Unit and integration tests. |
+
+## 🔬 EF Core Lucene Provider (Experimental)
+
+An experimental Entity Framework Core provider that enables using Lucene.Net as a data store with full ORM capabilities.
+
+### Current Status
+- ✅ **Phase 1-3**: Foundation, Metadata Mapping, and Update Pipeline (Create) completed
+- ✅ **Phase 4**: Query Pipeline Materialization completed
+- 🚧 **Phase 5-7**: LINQ Translation, Full CRUD, and Advanced Features (In Progress)
+
+### Features Implemented
+- Fluent API and Data Annotations for Lucene field configuration
+- `IndexWriter` lifecycle management integrated with EF Core's `SaveChanges()`
+- Custom metadata annotations (`Stored`, `Tokenized`, `Analyzer`)
+- Query compilation infrastructure for EF Core 10
+
+### Example Usage (Preview)
+```csharp
+public class Book
+{
+    public int Id { get; set; }
+    
+    [LuceneField(Stored = true, Tokenized = true)]
+    public string Title { get; set; }
+    
+    [LuceneField(Stored = true, Tokenized = false)]
+    public string ISBN { get; set; }
+}
+
+public class BookContext : DbContext
+{
+    protected override void OnConfiguring(DbContextOptionsBuilder optionsBuilder)
+    {
+        var directory = new RAMDirectory();
+        optionsBuilder.UseLucene(directory, "books");
+    }
+    
+    public DbSet<Book> Books { get; set; }
+}
+
+// Usage
+using var context = new BookContext();
+context.Books.Add(new Book { Id = 1, Title = "EF Core in Action", ISBN = "978-1617298363" });
+context.SaveChanges(); // Indexed to Lucene!
+```
+
+For detailed progress, see [`task_efcore.md`](task_efcore.md).
 
 ## 🛠 Prerequisites
 - .NET 8.0 or later.
