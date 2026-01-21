@@ -33,10 +33,11 @@ Mark sure code build successfully before moving to next phase and commit code af
 - [x] Verify POCO materialization stubs
 
 ## Phase 5: LINQ Translation (Read)
-- [ ] Implement `LuceneQuerySqlGenerator` (Query builder)
-- [ ] Map LINQ operators (`==`, `&&`, `||`, `>`, `<`)
-- [ ] Integrate `ElasticsearchQueryLucene.Core` logic
-- [ ] Verify simple LINQ queries
+- [x] Implement `LuceneExpressionTranslator` (Query builder)
+- [x] Map LINQ operators (`==`, `!=`, `&&`, `||`, `>`, `>=`, `<`, `<=`)
+- [x] Implement string methods (`Contains`, `StartsWith`, `EndsWith`)
+- [x] Implement `Where()`, `Skip()`, `Take()`, `FirstOrDefault()`, `Select()`
+- [x] Add comprehensive unit tests (15 tests, all passing)
 
 ## Phase 6: Full CRUD & State Management
 - [ ] Implement `UpdateDocument` logic

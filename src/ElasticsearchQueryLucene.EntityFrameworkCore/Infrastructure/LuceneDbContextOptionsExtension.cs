@@ -5,6 +5,7 @@ using Microsoft.EntityFrameworkCore.Metadata.Conventions.Infrastructure;
 using Microsoft.EntityFrameworkCore.Query;
 using Microsoft.EntityFrameworkCore.Storage;
 using Microsoft.Extensions.DependencyInjection;
+using Microsoft.Extensions.DependencyInjection.Extensions;
 
 namespace ElasticsearchQueryLucene.EntityFrameworkCore.Infrastructure;
 
@@ -33,7 +34,6 @@ public class LuceneDbContextOptionsExtension : IDbContextOptionsExtension
         builder.TryAdd<IConventionSetPlugin, Metadata.Conventions.LuceneConventionSetPlugin>();
         builder.TryAdd<IDatabase, Storage.LuceneDatabaseWrapper>();
         builder.TryAdd<IDatabaseCreator, Storage.LuceneDatabaseCreator>();
-        builder.TryAdd<Storage.ILuceneDatabase, Storage.LuceneDatabase>();
         builder.TryAdd<ITypeMappingSource, Storage.LuceneTypeMappingSource>();
         
         // Query services required by model builder and runtime
@@ -41,7 +41,9 @@ public class LuceneDbContextOptionsExtension : IDbContextOptionsExtension
         builder.TryAdd<IQueryCompilationContextFactory, Query.LuceneQueryCompilationContextFactory>();
         builder.TryAdd<IQueryableMethodTranslatingExpressionVisitorFactory, Query.LuceneQueryableMethodTranslatingExpressionVisitorFactory>();
         builder.TryAdd<IShapedQueryCompilingExpressionVisitorFactory, Query.LuceneShapedQueryCompilingExpressionVisitorFactory>();
-        builder.TryAdd<IStructuralTypeMaterializerSource, Query.LuceneEntityMaterializerSource>();
+        
+        // Register custom Lucene services using standard DI
+        services.TryAddScoped<Storage.ILuceneDatabase, Storage.LuceneDatabase>();
     }
 
     public virtual void Validate(IDbContextOptions options)

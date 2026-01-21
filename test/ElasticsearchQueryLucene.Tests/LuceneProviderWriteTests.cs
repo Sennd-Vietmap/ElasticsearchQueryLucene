@@ -14,7 +14,7 @@ public class LuceneProviderWriteTests
     {
         using var directory = new RAMDirectory();
         var options = new DbContextOptionsBuilder<WriteDbContext>()
-            .UseLucene(directory)
+            .UseLucene(directory, "books")
             .Options;
 
         using (var context = new WriteDbContext(options))
