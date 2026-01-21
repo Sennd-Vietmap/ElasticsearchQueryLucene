@@ -5,6 +5,10 @@ All notable changes to this project will be documented in this file.
 ## [1.2.0] - 2026-01-21
 
 ### Added
+- **NuGet Publishing Setup**: 
+    - Configured project metadata for `ElasticsearchQueryLucene.Core`.
+    - Included `README.md` and `MAPPING.md` in the NuGet package.
+    - Added GitHub Actions workflow for automated publishing on tag push.
 - **Input Validation Rules**: 
     - 100KB JSON size limit.
     - 5-level query nesting depth limit.

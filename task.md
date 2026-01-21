@@ -135,3 +135,11 @@ Marksure code build successfully before moving to next phase and commit code aft
   - [x] Run all tests
   - [x] Verify acceptance criteria
   - [x] Performance benchmarking
+
+## Phase 9: NuGet Publishing
+- [x] Configure NuGet metadata in `ElasticsearchQueryLucene.Core.csproj`
+- [x] Add versioning and author information
+- [x] Prepare `README.md` and `MAPPING.md` for package inclusion
+- [x] Set up GitHub Actions workflow for automated publishing
+- [x] Generate and verify `.nupkg` locally
+- [/] Push to NuGet.org

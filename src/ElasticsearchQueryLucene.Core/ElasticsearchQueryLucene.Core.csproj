@@ -4,7 +4,21 @@
     <TargetFramework>net10.0</TargetFramework>
     <ImplicitUsings>enable</ImplicitUsings>
     <Nullable>enable</Nullable>
+    <PackageId>ElasticsearchQueryLucene.Core</PackageId>
+    <Version>1.2.0</Version>
+    <Authors>Sennd-Vietmap</Authors>
+    <Description>A lightweight .NET library to convert Elasticsearch JSON Query DSL to Lucene Query Syntax.</Description>
+    <PackageTags>elasticsearch;lucene;query;dsl;converter</PackageTags>
+    <RepositoryUrl>https://github.com/Sennd-Vietmap/ElasticsearchQueryLucene</RepositoryUrl>
+    <PackageLicenseExpression>MIT</PackageLicenseExpression>
+    <PackageReadmeFile>README.md</PackageReadmeFile>
+    <GeneratePackageOnBuild>true</GeneratePackageOnBuild>
   </PropertyGroup>
+
+  <ItemGroup>
+    <None Include="..\..\README.md" Pack="true" PackagePath="\" />
+    <None Include="..\..\MAPPING.md" Pack="true" PackagePath="\" />
+  </ItemGroup>
 
   <ItemGroup>
     <PackageReference Include="System.Text.Json" Version="10.0.2" />
