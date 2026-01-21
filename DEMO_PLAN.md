@@ -59,7 +59,7 @@ The application will execute the following lifecycle:
 - Confirm deletion by attempting to retrieve the pet.
 
 ## 🚀 Execution Strategy
-1.  Run `dotnet new console -n ElasticsearchQueryLucene.Demo`
+1.  Run `dotnet new console -n ElasticsearchQueryLucene.Demo -o Example/ElasticsearchQueryLucene.Demo`
 2.  Link references.
 3.  Implement `Pet.cs` and `PetContext.cs`.
 4.  Write logic in `Program.cs`.
