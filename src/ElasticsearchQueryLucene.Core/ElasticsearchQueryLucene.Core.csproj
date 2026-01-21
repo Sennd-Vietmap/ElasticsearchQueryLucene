@@ -6,7 +6,7 @@
     <Nullable>enable</Nullable>
     <PackageId>ElasticsearchQueryLucene.Core</PackageId>
     <Title>ElasticsearchQueryLucene</Title>
-    <Version>1.2.3</Version>
+    <Version>1.3.0</Version>
     <Authors>Sennd-Vietmap</Authors>
     <Description>A powerful and lightweight logic to convert Elasticsearch Query DSL (JSON) to Lucene Query Syntax. Ideal for migrations and cross-platform search implementations.</Description>
     <PackageTags>ElasticsearchQueryLucene;elasticsearch;lucene;dsl;converter;query;syntax;search;mapping</PackageTags>

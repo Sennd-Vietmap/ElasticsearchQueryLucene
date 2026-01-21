@@ -10,6 +10,13 @@ All notable changes to this project will be documented in this file.
     - Support for Fluent API and Data Annotations (`[LuceneField]`) to configure Lucene-specific metadata.
     - Implemented Update Pipeline (Phase 3) for entity creation and document indexing.
     - Implemented Query Pipeline Materialization (Phase 4) using `IStructuralTypeMaterializerSource` for EF Core 10.
+    - **Implemented LINQ Translation (Phase 5)**:
+        - Full LINQ-to-Lucene query translation via `LuceneExpressionTranslator`
+        - Support for `Where()` with equality, comparison, boolean logic, and string methods
+        - Support for `Skip()`, `Take()`, `FirstOrDefault()`, and `Select()`
+        - Automatic Lucene special character escaping
+        - Proper range query syntax with inclusive/exclusive brackets
+        - 27 passing tests for query translation functionality
     - Integrated `IndexWriter` lifecycle management within the EF Core `ILuceneDatabase`.
     - Added comprehensive unit tests for provider configuration and metadata mapping.
 

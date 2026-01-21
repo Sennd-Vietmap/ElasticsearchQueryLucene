@@ -67,13 +67,20 @@ An experimental Entity Framework Core provider that enables using Lucene.Net as 
 ### Current Status
 - ✅ **Phase 1-3**: Foundation, Metadata Mapping, and Update Pipeline (Create) completed
 - ✅ **Phase 4**: Query Pipeline Materialization completed
-- 🚧 **Phase 5-7**: LINQ Translation, Full CRUD, and Advanced Features (In Progress)
+- ✅ **Phase 5**: LINQ Translation (Read) completed
+- 🚧 **Phase 6-7**: Full CRUD and Advanced Features (In Progress)
 
 ### Features Implemented
 - Fluent API and Data Annotations for Lucene field configuration
 - `IndexWriter` lifecycle management integrated with EF Core's `SaveChanges()`
 - Custom metadata annotations (`Stored`, `Tokenized`, `Analyzer`)
 - Query compilation infrastructure for EF Core 10
+- **LINQ-to-Lucene query translation**:
+  - `Where()` with full predicate support (equality, comparison, boolean logic, string methods)
+  - `Skip()` and `Take()` for pagination
+  - `FirstOrDefault()` with optional predicates
+  - Automatic Lucene special character escaping
+  - Proper range query syntax
 
 ### Example Usage (Preview)
 ```csharp
