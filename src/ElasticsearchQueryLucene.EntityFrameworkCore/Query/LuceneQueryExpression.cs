@@ -13,12 +13,14 @@ public class LuceneQueryExpression : Expression, IPrintableExpression
         Microsoft.EntityFrameworkCore.Metadata.IEntityType entityType,
         string? luceneQueryString = null,
         int? skip = null,
-        int? take = null)
+        int? take = null,
+        System.Collections.Generic.IReadOnlyList<(string Field, bool Ascending)>? sortFields = null)
     {
         EntityType = entityType;
         LuceneQueryString = luceneQueryString ?? "*:*"; // Default to match all
         Skip = skip;
         Take = take;
+        SortFields = sortFields ?? new System.Collections.Generic.List<(string Field, bool Ascending)>();
     }
 
     public override Type Type => typeof(IEnumerable<>).MakeGenericType(EntityType.ClrType);
@@ -27,15 +29,25 @@ public class LuceneQueryExpression : Expression, IPrintableExpression
     public string LuceneQueryString { get; }
     public int? Skip { get; }
     public int? Take { get; }
+    public System.Collections.Generic.IReadOnlyList<(string Field, bool Ascending)> SortFields { get; }
 
     public LuceneQueryExpression WithLuceneQuery(string luceneQuery)
-        => new(EntityType, luceneQuery, Skip, Take);
+        => new(EntityType, luceneQuery, Skip, Take, SortFields);
 
     public LuceneQueryExpression WithSkip(int skip)
-        => new(EntityType, LuceneQueryString, skip, Take);
+        => new(EntityType, LuceneQueryString, skip, Take, SortFields);
 
     public LuceneQueryExpression WithTake(int take)
-        => new(EntityType, LuceneQueryString, Skip, take);
+        => new(EntityType, LuceneQueryString, Skip, take, SortFields);
+
+    public LuceneQueryExpression WithSort(string field, bool ascending)
+    {
+        var newSort = new System.Collections.Generic.List<(string Field, bool Ascending)>(SortFields)
+        {
+            (field, ascending)
+        };
+        return new LuceneQueryExpression(EntityType, LuceneQueryString, Skip, Take, newSort);
+    }
 
     public void Print(ExpressionPrinter expressionPrinter)
     {
@@ -43,6 +55,10 @@ public class LuceneQueryExpression : Expression, IPrintableExpression
         if (LuceneQueryString != "*:*")
         {
             expressionPrinter.Append($".Where({LuceneQueryString})");
+        }
+        foreach (var sort in SortFields)
+        {
+            expressionPrinter.Append($".OrderBy({sort.Field}, {(sort.Ascending ? "asc" : "desc")})");
         }
         if (Skip.HasValue)
         {

@@ -27,6 +27,10 @@ public class LuceneShapedQueryCompilingExpressionVisitor : ShapedQueryCompilingE
         // Build a lambda that executes the Lucene query
         var queryContextParameter = Expression.Parameter(typeof(QueryContext), "queryContext");
         
+        // Extract sort fields
+        var sortFieldsStr = luceneQuery.SortFields.Select(s => s.Field).ToArray();
+        var sortAscending = luceneQuery.SortFields.Select(s => s.Ascending).ToArray();
+
         // Create the query execution expression
         var executeMethod = typeof(LuceneShapedQueryCompilingExpressionVisitor)
             .GetMethod(nameof(ExecuteLuceneQuery), System.Reflection.BindingFlags.Static | System.Reflection.BindingFlags.NonPublic)!
@@ -36,8 +40,10 @@ public class LuceneShapedQueryCompilingExpressionVisitor : ShapedQueryCompilingE
             executeMethod,
             queryContextParameter,
             Expression.Constant(luceneQuery.LuceneQueryString),
-            Expression.Constant(luceneQuery.Skip),
-            Expression.Constant(luceneQuery.Take));
+            Expression.Constant(luceneQuery.Skip, typeof(int?)),
+            Expression.Constant(luceneQuery.Take, typeof(int?)),
+            Expression.Constant(sortFieldsStr),
+            Expression.Constant(sortAscending));
 
         return Expression.Lambda(executeCall, queryContextParameter);
     }
@@ -46,7 +52,9 @@ public class LuceneShapedQueryCompilingExpressionVisitor : ShapedQueryCompilingE
         QueryContext queryContext,
         string luceneQueryString,
         int? skip,
-        int? take) where T : class, new()
+        int? take,
+        string[] sortFields,
+        bool[] sortAscending) where T : class, new()
     {
         // Get the Lucene directory from the context
         var luceneContext = queryContext as LuceneQueryContext;
@@ -75,11 +83,35 @@ public class LuceneShapedQueryCompilingExpressionVisitor : ShapedQueryCompilingE
             query = new MatchAllDocsQuery();
         }
 
+        // Prepare Sort
+        Sort? sort = null;
+        if (sortFields != null && sortFields.Length > 0)
+        {
+            var sortFieldList = new List<SortField>();
+            for (int i = 0; i < sortFields.Length; i++)
+            {
+                // Default to STRING sort for now. In a real scenario, we'd map types.
+                // Reverse is !ascending
+                sortFieldList.Add(new SortField(sortFields[i], SortFieldType.STRING, !sortAscending[i]));
+            }
+            sort = new Sort(sortFieldList.ToArray());
+        }
+
         // Execute the search
         var maxResults = (skip ?? 0) + (take ?? 1000);
-        var topDocs = searcher.Search(query, maxResults);
+        TopDocs topDocs;
+        
+        if (sort != null)
+        {
+            // Search with matching, N filters, max items, and Sort
+            topDocs = searcher.Search(query, null, maxResults, sort);
+        }
+        else
+        {
+            topDocs = searcher.Search(query, maxResults);
+        }
 
-        // Apply skip/take
+        // Apply skip/take (materialization limits)
         var startIndex = skip ?? 0;
         var endIndex = take.HasValue ? startIndex + take.Value : topDocs.ScoreDocs.Length;
         endIndex = Math.Min(endIndex, topDocs.ScoreDocs.Length);

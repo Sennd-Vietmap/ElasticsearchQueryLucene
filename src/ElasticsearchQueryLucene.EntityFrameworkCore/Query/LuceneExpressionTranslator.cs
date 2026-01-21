@@ -99,6 +99,14 @@ public class LuceneExpressionTranslator : ExpressionVisitor
             var value = GetValue(node.Arguments[0]);
             _queryBuilder.Append($"{_currentFieldName}:*{EscapeValue(value)}");
         }
+        else if (node.Method.Name == "LuceneMatch" && node.Method.DeclaringType?.Name == "LuceneDbFunctionsExtensions")
+        {
+            // EF.Functions.LuceneMatch(property, query)
+            Visit(node.Arguments[1]); // Visit property to set _currentFieldName
+            var query = GetValue(node.Arguments[2]);
+            // Do NOT escape the query value here as it's meant to be raw Lucene syntax
+            _queryBuilder.Append($"{_currentFieldName}:({query})");
+        }
         else
         {
             throw new NotSupportedException($"Method {node.Method.Name} is not supported.");
