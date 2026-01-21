@@ -118,4 +118,28 @@ public class QueryConversionTests
         var result = Convert(json);
         Assert.Equal("name:john\\+doe", result);
     }
+
+    [Fact]
+    public void OverSizeJson_ShouldThrowException()
+    {
+        var largeValue = new string('a', 101 * 1024);
+        var json = "{\"term\": {\"field\": \"" + largeValue + "\"}}";
+        Assert.Throws<ArgumentException>(() => _parser.Parse(json));
+    }
+
+    [Fact]
+    public void DeepNesting_ShouldThrowException()
+    {
+        var json = "{\"bool\": {\"must\": [{\"bool\": {\"must\": [{\"bool\": {\"must\": [{\"bool\": {\"must\": [{\"bool\": {\"must\": [{\"bool\": {\"must\": [{\"term\": {\"a\":\"b\"}}]}}]}}]}}]}}]}}]}}";
+        Assert.Throws<InvalidOperationException>(() => _parser.Parse(json));
+    }
+
+    [Fact]
+    public void InvalidJson_ShouldThrowFormatExceptionWithDetails()
+    {
+        var json = "{\"term\": {\"field\": \"value\""; // Missing closing brackets
+        var ex = Assert.Throws<FormatException>(() => _parser.Parse(json));
+        Assert.Contains("Line:", ex.Message);
+        Assert.Contains("Column:", ex.Message);
+    }
 }

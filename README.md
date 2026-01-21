@@ -8,6 +8,10 @@ A lightweight .NET library designed to bridge the gap between Elasticsearch's JS
     -   **Term Level**: `term`, `terms`, `match`, `match_phrase`, `prefix`, `wildcard`, `fuzzy`, `regexp`, `exists`, `ids`.
     -   **Ranges**: Support for `gte`, `gt`, `lte`, `lt` with correct `[]` and `{}` bracket mapping.
     -   **Boolean Logic**: Full support for `must` (+), `should` (OR), `must_not` (-), and `filter` (+) with recursive nesting.
+-   **Strict Input Validation**:
+    -   **Max Size**: 100KB per JSON string.
+    -   **Max Depth**: 5 levels of query nesting to prevent stack overflow/DOS.
+    -   **Detailed Errors**: Detailed error messages including line and column numbers for malformed JSON.
 -   **Architecture-First Design**: Built using industry-standard patterns:
     -   **Visitor Pattern**: Separates traversal from syntax generation.
     -   **Composite Pattern**: Handles hierarchical query structures.

@@ -5,24 +5,47 @@ namespace ElasticsearchQueryLucene.Core.Converters;
 
 public class QueryParser
 {
+    private const int MaxJsonSizeBytes = 100 * 1024; // 100KB
+    private const int MaxNestingDepth = 5;
+
     public QueryNode Parse(string json)
     {
-        using var doc = JsonDocument.Parse(json);
-        var root = doc.RootElement;
-        
-        if (root.TryGetProperty("query", out var queryElement))
-        {
-            return ParseNode(queryElement);
-        }
+        // 1. Validate Input Size
+        if (string.IsNullOrEmpty(json))
+            throw new ArgumentException("JSON input cannot be null or empty.");
 
-        return ParseNode(root);
+        if (System.Text.Encoding.UTF8.GetByteCount(json) > MaxJsonSizeBytes)
+            throw new ArgumentException($"JSON input exceeds the maximum size limit of {MaxJsonSizeBytes / 1024}KB.");
+
+        try
+        {
+            using var doc = JsonDocument.Parse(json);
+            var root = doc.RootElement;
+            
+            // 2. Start Recursive Parsing with Depth Tracking
+            if (root.TryGetProperty("query", out var queryElement))
+            {
+                return ParseNode(queryElement, 1);
+            }
+
+            return ParseNode(root, 1);
+        }
+        catch (JsonException ex)
+        {
+            throw new FormatException($"Invalid JSON format: {ex.Message} at Line: {ex.LineNumber}, Column: {ex.BytePositionInLine}.", ex);
+        }
     }
 
-    private QueryNode ParseNode(JsonElement element)
+    private QueryNode ParseNode(JsonElement element, int depth)
     {
+        if (depth > MaxNestingDepth)
+        {
+            throw new InvalidOperationException($"Query nesting exceeds the maximum depth of {MaxNestingDepth}.");
+        }
+
         if (element.TryGetProperty("bool", out var boolElement))
         {
-            return ParseBool(boolElement);
+            return ParseBool(boolElement, depth);
         }
         if (element.TryGetProperty("term", out var termElement))
         {
@@ -69,28 +92,27 @@ public class QueryParser
             return ParseRange(rangeElement);
         }
 
-        // Default or error handling
         throw new NotSupportedException($"Query type not supported or invalid structure: {element.GetRawText()}");
     }
 
-    private BoolQueryNode ParseBool(JsonElement element)
+    private BoolQueryNode ParseBool(JsonElement element, int depth)
     {
         var node = new BoolQueryNode();
         if (element.TryGetProperty("must", out var must))
         {
-            foreach (var item in must.EnumerateArray()) node.Must.Add(ParseNode(item));
+            foreach (var item in must.EnumerateArray()) node.Must.Add(ParseNode(item, depth + 1));
         }
         if (element.TryGetProperty("should", out var should))
         {
-            foreach (var item in should.EnumerateArray()) node.Should.Add(ParseNode(item));
+            foreach (var item in should.EnumerateArray()) node.Should.Add(ParseNode(item, depth + 1));
         }
         if (element.TryGetProperty("must_not", out var mustNot))
         {
-            foreach (var item in mustNot.EnumerateArray()) node.MustNot.Add(ParseNode(item));
+            foreach (var item in mustNot.EnumerateArray()) node.MustNot.Add(ParseNode(item, depth + 1));
         }
         if (element.TryGetProperty("filter", out var filter))
         {
-            foreach (var item in filter.EnumerateArray()) node.Filter.Add(ParseNode(item));
+            foreach (var item in filter.EnumerateArray()) node.Filter.Add(ParseNode(item, depth + 1));
         }
         if (element.TryGetProperty("minimum_should_match", out var msm))
         {

@@ -2,6 +2,15 @@
 
 All notable changes to this project will be documented in this file.
 
+## [1.2.0] - 2026-01-21
+
+### Added
+- **Input Validation Rules**: 
+    - 100KB JSON size limit.
+    - 5-level query nesting depth limit.
+    - Detailed error reporting with line/column pointers for invalid JSON.
+- **Improved Stability**: Prevents recursion overflow and memory issues from malicious or malformed DSL.
+
 ## [1.1.0] - 2026-01-21
 
 ### Added
