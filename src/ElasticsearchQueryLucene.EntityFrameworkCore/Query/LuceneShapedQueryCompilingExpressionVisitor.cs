@@ -90,9 +90,18 @@ public class LuceneShapedQueryCompilingExpressionVisitor : ShapedQueryCompilingE
             var sortFieldList = new List<SortField>();
             for (int i = 0; i < sortFields.Length; i++)
             {
-                // Default to STRING sort for now. In a real scenario, we'd map types.
-                // Reverse is !ascending
-                sortFieldList.Add(new SortField(sortFields[i], SortFieldType.STRING, !sortAscending[i]));
+                // Detect sort type based on property type
+                var prop = typeof(T).GetProperty(sortFields[i]);
+                var sortType = SortFieldType.STRING;
+                if (prop != null)
+                {
+                    if (prop.PropertyType == typeof(int) || prop.PropertyType == typeof(int?)) sortType = SortFieldType.INT32;
+                    else if (prop.PropertyType == typeof(long) || prop.PropertyType == typeof(long?)) sortType = SortFieldType.INT64;
+                    else if (prop.PropertyType == typeof(float) || prop.PropertyType == typeof(float?)) sortType = SortFieldType.SINGLE;
+                    else if (prop.PropertyType == typeof(double) || prop.PropertyType == typeof(double?)) sortType = SortFieldType.DOUBLE;
+                }
+                
+                sortFieldList.Add(new SortField(sortFields[i], sortType, !sortAscending[i]));
             }
             sort = new Sort(sortFieldList.ToArray());
         }
