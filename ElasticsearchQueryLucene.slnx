@@ -1,8 +1,11 @@
 <Solution>
   <Folder Name="/src/">
-    <Project Path="src/ElasticsearchQueryLucene.Console/ElasticsearchQueryLucene.Console.csproj" />
     <Project Path="src/ElasticsearchQueryLucene.Core/ElasticsearchQueryLucene.Core.csproj" />
     <Project Path="src/ElasticsearchQueryLucene.EntityFrameworkCore/ElasticsearchQueryLucene.EntityFrameworkCore.csproj" />
+  </Folder>
+  <Folder Name="/Example/">
+    <Project Path="Example/ElasticsearchQueryLucene.Console/ElasticsearchQueryLucene.Console.csproj" />
+    <Project Path="Example/ElasticsearchQueryLucene.Demo/ElasticsearchQueryLucene.Demo.csproj" />
   </Folder>
   <Folder Name="/test/">
     <Project Path="test/ElasticsearchQueryLucene.Tests/ElasticsearchQueryLucene.Tests.csproj" />

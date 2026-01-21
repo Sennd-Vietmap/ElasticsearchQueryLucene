@@ -1,7 +1,7 @@
 ﻿<Project Sdk="Microsoft.NET.Sdk">
 
   <ItemGroup>
-    <ProjectReference Include="..\ElasticsearchQueryLucene.Core\ElasticsearchQueryLucene.Core.csproj" />
+    <ProjectReference Include="..\..\src\ElasticsearchQueryLucene.Core\ElasticsearchQueryLucene.Core.csproj" />
   </ItemGroup>
 
   <ItemGroup>
