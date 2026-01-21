@@ -1,0 +1,56 @@
+# .NET
+bin/
+obj/
+*.user
+*.userosscache
+*.sln.docuser.json
+
+# Visual Studio
+.vs/
+[Tt]est[Rr]esults/
+*.suo
+*.user
+*.userosscache
+*.sln.docuser.json
+*.sqlproj.user
+*.userprefs
+mono_crash.*
+[Dd]ebug/
+[Rr]elease/
+x64/
+x86/
+BuildLog.htm
+temp.res
+*.pdb
+*.bak
+*.cache
+*.ilk
+*.log
+*.tlog
+*.vspscc
+*.vssscc
+.buildlog
+*.fakesconfig
+*.nativecodeanalysis.all.xml
+*.pfx
+*.publishsettings
+*.suo
+*.user
+*.vshost.*
+*.vshost.*.manifest
+*.xml
+*.orig
+*.[Cc]ache
+[Cc]ache/
+[Oo]bj/
+[Bb]in/
+
+# Rider
+.idea/
+*.sln.iml
+
+# OS
+Thumbs.db
+ehthumbs.db
+Desktop.ini
+.DS_Store
