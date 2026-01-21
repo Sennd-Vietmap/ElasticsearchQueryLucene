@@ -12,6 +12,7 @@ A lightweight .NET library designed to bridge the gap between Elasticsearch's JS
     -   **Max Size**: 100KB per JSON string.
     -   **Max Depth**: 5 levels of query nesting to prevent stack overflow/DOS.
     -   **Detailed Errors**: Detailed error messages including line and column numbers for malformed JSON.
+-   **[Detailed Mapping Guide](MAPPING.md)**: Find the exact conversion rules for every supported query type.
 -   **Architecture-First Design**: Built using industry-standard patterns:
     -   **Visitor Pattern**: Separates traversal from syntax generation.
     -   **Composite Pattern**: Handles hierarchical query structures.
