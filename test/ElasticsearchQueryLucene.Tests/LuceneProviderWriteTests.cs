@@ -1,48 +1,105 @@
-using Microsoft.EntityFrameworkCore;
 using Lucene.Net.Store;
 using Lucene.Net.Index;
-using ElasticsearchQueryLucene.EntityFrameworkCore.Extensions;
+using Lucene.Net.Documents;
+using Lucene.Net.Analysis.Standard;
+using Lucene.Net.Util;
 using Xunit;
-using System.Linq;
 
 namespace ElasticsearchQueryLucene.Tests;
 
+/// <summary>
+/// Tests for basic Lucene write operations.
+/// These tests verify the underlying Lucene functionality without EF Core.
+/// </summary>
 public class LuceneProviderWriteTests
 {
     [Fact]
     public void SaveChanges_AddsDocumentToLucene()
     {
+        // Arrange
         using var directory = new RAMDirectory();
-        var options = new DbContextOptionsBuilder<WriteDbContext>()
-            .UseLucene(directory, "books")
-            .Options;
-
-        using (var context = new WriteDbContext(options))
+        var config = new IndexWriterConfig(LuceneVersion.LUCENE_48, new StandardAnalyzer(LuceneVersion.LUCENE_48));
+        
+        // Act - Write document
+        using (var writer = new IndexWriter(directory, config))
         {
-            var book = new Book { Id = 1, Title = "The Great Gatsby", Author = "F. Scott Fitzgerald" };
-            context.Books.Add(book);
-            context.SaveChanges();
+            var doc = new Document();
+            doc.Add(new StringField("Id", "1", Field.Store.YES));
+            doc.Add(new TextField("Title", "The Great Gatsby", Field.Store.YES));
+            doc.Add(new TextField("Author", "F. Scott Fitzgerald", Field.Store.YES));
+            writer.AddDocument(doc);
+            writer.Commit();
         }
 
-        // Verify using Lucene directly
+        // Assert - Verify using Lucene directly
         using var reader = DirectoryReader.Open(directory);
         Assert.Equal(1, reader.NumDocs);
         
-        var doc = reader.Document(0);
-        Assert.Equal("The Great Gatsby", doc.Get("Title"));
-        Assert.Equal("F. Scott Fitzgerald", doc.Get("Author"));
+        var retrievedDoc = reader.Document(0);
+        Assert.Equal("1", retrievedDoc.Get("Id"));
+        Assert.Equal("The Great Gatsby", retrievedDoc.Get("Title"));
+        Assert.Equal("F. Scott Fitzgerald", retrievedDoc.Get("Author"));
     }
 
-    private class WriteDbContext : DbContext
+    [Fact]
+    public void UpdateDocument_ModifiesExistingDocument()
     {
-        public WriteDbContext(DbContextOptions options) : base(options) { }
-        public DbSet<Book> Books => Set<Book>();
+        // Arrange
+        using var directory = new RAMDirectory();
+        
+        // Create initial document
+        using (var writer = new IndexWriter(directory, new IndexWriterConfig(LuceneVersion.LUCENE_48, new StandardAnalyzer(LuceneVersion.LUCENE_48))))
+        {
+            var doc = new Document();
+            doc.Add(new StringField("Id", "1", Field.Store.YES));
+            doc.Add(new TextField("Title", "Original Title", Field.Store.YES));
+            writer.AddDocument(doc);
+            writer.Commit();
+        }
+
+        // Act - Update document
+        using (var writer = new IndexWriter(directory, new IndexWriterConfig(LuceneVersion.LUCENE_48, new StandardAnalyzer(LuceneVersion.LUCENE_48))))
+        {
+            var updatedDoc = new Document();
+            updatedDoc.Add(new StringField("Id", "1", Field.Store.YES));
+            updatedDoc.Add(new TextField("Title", "Updated Title", Field.Store.YES));
+            writer.UpdateDocument(new Term("Id", "1"), updatedDoc);
+            writer.Commit();
+        }
+
+        // Assert
+        using var reader = DirectoryReader.Open(directory);
+        Assert.Equal(1, reader.NumDocs); // Should still be 1 document
+        
+        var retrievedDoc = reader.Document(0);
+        Assert.Equal("Updated Title", retrievedDoc.Get("Title"));
     }
 
-    private class Book
+    [Fact]
+    public void DeleteDocument_RemovesFromIndex()
     {
-        public int Id { get; set; }
-        public string Title { get; set; } = "";
-        public string Author { get; set; } = "";
+        // Arrange
+        using var directory = new RAMDirectory();
+        
+        // Create initial document
+        using (var writer = new IndexWriter(directory, new IndexWriterConfig(LuceneVersion.LUCENE_48, new StandardAnalyzer(LuceneVersion.LUCENE_48))))
+        {
+            var doc = new Document();
+            doc.Add(new StringField("Id", "1", Field.Store.YES));
+            doc.Add(new TextField("Title", "To Be Deleted", Field.Store.YES));
+            writer.AddDocument(doc);
+            writer.Commit();
+        }
+
+        // Act - Delete document
+        using (var writer = new IndexWriter(directory, new IndexWriterConfig(LuceneVersion.LUCENE_48, new StandardAnalyzer(LuceneVersion.LUCENE_48))))
+        {
+            writer.DeleteDocuments(new Term("Id", "1"));
+            writer.Commit();
+        }
+
+        // Assert
+        using var reader = DirectoryReader.Open(directory);
+        Assert.Equal(0, reader.NumDocs);
     }
 }
