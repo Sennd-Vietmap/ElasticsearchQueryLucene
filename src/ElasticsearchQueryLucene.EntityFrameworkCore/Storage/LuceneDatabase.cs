@@ -11,17 +11,20 @@ using Lucene.Net.Index;
 using Lucene.Net.Util;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Infrastructure;
+using Microsoft.EntityFrameworkCore.Storage;
+using Microsoft.EntityFrameworkCore.Storage;
 using Microsoft.EntityFrameworkCore.Update;
 
 namespace ElasticsearchQueryLucene.EntityFrameworkCore.Storage;
 
 public class LuceneDatabase : ILuceneDatabase
 {
-    private readonly IDbContextOptions _options;
-
-    public LuceneDatabase(IDbContextOptions options)
+    private readonly ITypeMappingSource _typeMappingSource;
+    IDbContextOptions _options;
+    public LuceneDatabase(IDbContextOptions options, ITypeMappingSource typeMappingSource)
     {
         _options = options;
+        _typeMappingSource = typeMappingSource;
     }
 
     public int SaveChanges(IList<IUpdateEntry> entries)
@@ -45,7 +48,7 @@ public class LuceneDatabase : ILuceneDatabase
 
                 case EntityState.Modified:
                     var keyValue = GetKeyValue(entry);
-                    var term = new Term("Id", keyValue);
+                    var term = new Term("__pk", keyValue);
                     var updatedDoc = CreateDocument(entry);
                     writer.UpdateDocument(term, updatedDoc);
                     count++;
@@ -53,7 +56,7 @@ public class LuceneDatabase : ILuceneDatabase
 
                 case EntityState.Deleted:
                     var deleteKeyValue = GetKeyValue(entry);
-                    var deleteTerm = new Term("Id", deleteKeyValue);
+                    var deleteTerm = new Term("__pk", deleteKeyValue);
                     writer.DeleteDocuments(deleteTerm);
                     count++;
                     break;
@@ -73,24 +76,63 @@ public class LuceneDatabase : ILuceneDatabase
     {
         var doc = new Document();
         var entityType = entry.EntityType;
+        var pkProperty = entityType.FindPrimaryKey()?.Properties.FirstOrDefault();
+
+        // Add System PK field
+        if (pkProperty != null)
+        {
+            var pkValue = entry.GetCurrentValue(pkProperty)?.ToString();
+            if (pkValue != null)
+            {
+                // Store YES to verify if needed, Index NOT_ANALYZED (StringField behavior)
+                doc.Add(new StringField("__pk", pkValue, Field.Store.YES)); 
+            }
+        }
 
         foreach (var property in entityType.GetProperties())
         {
             var value = entry.GetCurrentValue(property);
             if (value == null) continue;
 
+            // Resolve Mapping and Converter
+            var mapping = _typeMappingSource.FindMapping(property);
+            if (mapping?.Converter != null)
+            {
+                value = mapping.Converter.ConvertToProvider(value);
+            }
+
             var isStored = property[LuceneAnnotationNames.Stored] as bool? ?? true;
             var isTokenized = property[LuceneAnnotationNames.Tokenized] as bool? ?? true;
-
             var fieldName = property.Name;
-            
-            if (isTokenized)
+            var storeMode = isStored ? Field.Store.YES : Field.Store.NO;
+
+            if (value is int i)
             {
-                doc.Add(new TextField(fieldName, value.ToString(), isStored ? Field.Store.YES : Field.Store.NO));
+                doc.Add(new Int32Field(fieldName, i, storeMode));
+            }
+            else if (value is long l)
+            {
+                doc.Add(new Int64Field(fieldName, l, storeMode));
+            }
+            else if (value is float f)
+            {
+                doc.Add(new SingleField(fieldName, f, storeMode));
+            }
+            else if (value is double d)
+            {
+                doc.Add(new DoubleField(fieldName, d, storeMode));
             }
             else
             {
-                doc.Add(new StringField(fieldName, value.ToString(), isStored ? Field.Store.YES : Field.Store.NO));
+                var strValue = value.ToString();
+                if (isTokenized)
+                {
+                    doc.Add(new TextField(fieldName, strValue, storeMode));
+                }
+                else
+                {
+                    doc.Add(new StringField(fieldName, strValue, storeMode));
+                }
             }
         }
 
@@ -105,7 +147,13 @@ public class LuceneDatabase : ILuceneDatabase
             throw new InvalidOperationException($"Entity type {entry.EntityType.Name} does not have a primary key defined.");
         }
 
-        var keyValue = entry.GetCurrentValue(keyProperty);
-        return keyValue?.ToString() ?? throw new InvalidOperationException("Primary key value cannot be null.");
+        var value = entry.GetCurrentValue(keyProperty);
+        var mapping = _typeMappingSource.FindMapping(keyProperty);
+        if (mapping?.Converter != null)
+        {
+            value = mapping.Converter.ConvertToProvider(value);
+        }
+
+        return value?.ToString() ?? throw new InvalidOperationException("Primary key value cannot be null.");
     }
 }

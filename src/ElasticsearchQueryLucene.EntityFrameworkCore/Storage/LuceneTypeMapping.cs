@@ -22,9 +22,9 @@ public class LuceneTypeMapping : CoreTypeMapping
     {
     }
 
-        public override CoreTypeMapping WithComposedConverter(ValueConverter? converter, ValueComparer? comparer = null, ValueComparer? keyComparer = null, CoreTypeMapping? elementMapping = null, JsonValueReaderWriter? jsonValueReaderWriter = null)
+    public override CoreTypeMapping WithComposedConverter(ValueConverter? converter, ValueComparer? comparer = null, ValueComparer? keyComparer = null, CoreTypeMapping? elementMapping = null, JsonValueReaderWriter? jsonValueReaderWriter = null)
     {
-        throw new NotImplementedException();
+        return new LuceneTypeMapping(Parameters.WithComposedConverter(converter, comparer, keyComparer, elementMapping, jsonValueReaderWriter));
     }
 
     protected override CoreTypeMapping Clone(CoreTypeMappingParameters parameters)
