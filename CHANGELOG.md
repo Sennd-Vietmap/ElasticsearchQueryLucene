@@ -2,6 +2,14 @@
 
 All notable changes to this project will be documented in this file.
 
+## [2.0.1] - 2026-01-22
+
+### Fixed
+- **Legacy Test Stabilization**: 
+    - Modernized 42 unit tests in `ElasticsearchQueryLucene.Tests` to align with v2.0 quoting and case-sensitivity behavior.
+    - Resolved provider registration conflicts in `LuceneProviderTests` by isolating `InMemory` from `Lucene` provider.
+- **Materialization**: Added null-safety check for value-type materialization to prevent `NullReferenceException` on missing fields.
+
 ## [2.0.0] - 2026-01-22
 
 ### Added

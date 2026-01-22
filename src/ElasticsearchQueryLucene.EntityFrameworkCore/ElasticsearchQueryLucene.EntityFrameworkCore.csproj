@@ -15,6 +15,21 @@
     <TargetFramework>net10.0</TargetFramework>
     <ImplicitUsings>enable</ImplicitUsings>
     <Nullable>enable</Nullable>
+    <PackageId>ElasticsearchQueryLucene.EntityFrameworkCore</PackageId>
+    <Title>ElasticsearchQueryLucene EntityFrameworkCore Provider</Title>
+    <Version>2.0.1</Version>
+    <Authors>Sennd-Vietmap</Authors>
+    <Description>A robust Entity Framework Core provider for Lucene.Net 4.8. Enabling full ORM capabilities (LINQ, Change Tracking, Paging) over Lucene indexes.</Description>
+    <PackageTags>ElasticsearchQueryLucene;EFCore;EntityFramework;lucene;search;orm;query</PackageTags>
+    <PackageProjectUrl>https://github.com/Sennd-Vietmap/ElasticsearchQueryLucene</PackageProjectUrl>
+    <RepositoryUrl>https://github.com/Sennd-Vietmap/ElasticsearchQueryLucene</RepositoryUrl>
+    <PackageLicenseExpression>MIT</PackageLicenseExpression>
+    <PackageReadmeFile>README.md</PackageReadmeFile>
+    <GeneratePackageOnBuild>true</GeneratePackageOnBuild>
   </PropertyGroup>
+
+  <ItemGroup>
+    <None Include="..\..\README.md" Pack="true" PackagePath="\" />
+  </ItemGroup>
 
 </Project>
