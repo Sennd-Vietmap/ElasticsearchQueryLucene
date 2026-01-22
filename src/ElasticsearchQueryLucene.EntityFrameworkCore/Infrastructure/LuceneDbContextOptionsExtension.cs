@@ -1,11 +1,14 @@
-using System.Collections.Generic;
+using ElasticsearchQueryLucene.EntityFrameworkCore.Log;
 using Lucene.Net.Store;
+using Microsoft.EntityFrameworkCore.Diagnostics;
 using Microsoft.EntityFrameworkCore.Infrastructure;
 using Microsoft.EntityFrameworkCore.Metadata.Conventions.Infrastructure;
 using Microsoft.EntityFrameworkCore.Query;
 using Microsoft.EntityFrameworkCore.Storage;
+using Microsoft.EntityFrameworkCore.ValueGeneration;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.DependencyInjection.Extensions;
+using System.Collections.Generic;
 
 namespace ElasticsearchQueryLucene.EntityFrameworkCore.Infrastructure;
 
@@ -32,9 +35,13 @@ public class LuceneDbContextOptionsExtension : IDbContextOptionsExtension
         var builder = new EntityFrameworkServicesBuilder(services);
         
         builder.TryAdd<IConventionSetPlugin, Metadata.Conventions.LuceneConventionSetPlugin>();
+        builder.TryAdd<IDatabaseProvider, Storage.LuceneDatabaseProvider>();
         builder.TryAdd<IDatabase, Storage.LuceneDatabaseWrapper>();
         builder.TryAdd<IDatabaseCreator, Storage.LuceneDatabaseCreator>();
         builder.TryAdd<ITypeMappingSource, Storage.LuceneTypeMappingSource>();
+        builder.TryAdd<IExecutionStrategyFactory, Storage.LuceneExecutionStrategyFactory>();
+        builder.TryAdd<IDbContextTransactionManager, Storage.LuceneTransactionManager>();
+        builder.TryAdd<IValueGeneratorSelector, ValueGeneration.LuceneValueGeneratorSelector>();
         
         // Query services required by model builder and runtime
         builder.TryAdd<IQueryContextFactory, Query.LuceneQueryContextFactory>();
@@ -42,8 +49,14 @@ public class LuceneDbContextOptionsExtension : IDbContextOptionsExtension
         builder.TryAdd<IQueryableMethodTranslatingExpressionVisitorFactory, Query.LuceneQueryableMethodTranslatingExpressionVisitorFactory>();
         builder.TryAdd<IShapedQueryCompilingExpressionVisitorFactory, Query.LuceneShapedQueryCompilingExpressionVisitorFactory>();
         
+        // Diagnostics
+        builder.TryAdd<LoggingDefinitions, LuceneLoggingDefinitions>();
+        
         // Register custom Lucene services using standard DI
         services.TryAddScoped<Storage.ILuceneDatabase, Storage.LuceneDatabase>();
+        
+        // Register all core EF services (must be called last)
+        builder.TryAddCoreServices();
     }
 
     public virtual void Validate(IDbContextOptions options)

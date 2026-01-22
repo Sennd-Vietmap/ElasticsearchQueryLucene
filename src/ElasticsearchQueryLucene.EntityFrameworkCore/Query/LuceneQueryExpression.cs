@@ -23,7 +23,7 @@ public class LuceneQueryExpression : Expression, IPrintableExpression
         SortFields = sortFields ?? new System.Collections.Generic.List<(string Field, bool Ascending)>();
     }
 
-    public override Type Type => typeof(IEnumerable<>).MakeGenericType(EntityType.ClrType);
+    public override Type Type => typeof(IEnumerable<object[]>);
     public override ExpressionType NodeType => ExpressionType.Extension;
     public Microsoft.EntityFrameworkCore.Metadata.IEntityType EntityType { get; }
     public string LuceneQueryString { get; }

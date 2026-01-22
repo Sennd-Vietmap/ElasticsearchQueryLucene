@@ -25,9 +25,41 @@ public class LuceneQueryableMethodTranslatingExpressionVisitor : QueryableMethod
     protected override ShapedQueryExpression CreateShapedQueryExpression(IEntityType entityType)
     {
         var queryExpression = new LuceneQueryExpression(entityType);
+
+        // Create shaper: (object[] values) => new Entity { Prop1 = (Type)values[0], ... }
+        var valueBufferParameter = Expression.Parameter(typeof(object[]), "values");
+        var properties = entityType.GetProperties().ToList();
+        var bindings = new System.Collections.Generic.List<MemberBinding>();
+        
+        for (int i = 0; i < properties.Count; i++)
+        {
+            var property = properties[i];
+            
+            // values[i]
+            var valueExpression = Expression.ArrayIndex(
+                valueBufferParameter,
+                Expression.Constant(i)
+            );
+
+            // Cast to property type
+            var convertedExpression = Expression.Convert(valueExpression, property.ClrType);
+
+            if (property.PropertyInfo != null && property.PropertyInfo.CanWrite)
+            {
+                bindings.Add(Expression.Bind(property.PropertyInfo, convertedExpression));
+            }
+        }
+
+        var newEntityExpression = Expression.MemberInit(
+            Expression.New(entityType.ClrType),
+            bindings
+        );
+
+        var shaperLambda = Expression.Lambda(newEntityExpression, valueBufferParameter);
+
         return new ShapedQueryExpression(
             queryExpression,
-            Expression.Parameter(entityType.ClrType, "e"));
+            shaperLambda);
     }
 
     protected override QueryableMethodTranslatingExpressionVisitor CreateSubqueryVisitor()

@@ -1,0 +1,26 @@
+
+            ========== CRITICAL ERROR ==========
+            Message: Expression of type 'System.Func`2[Microsoft.EntityFrameworkCore.Query.QueryContext,System.Collections.Generic.IEnumerable`1[ElasticsearchQueryLucene.Demo.Pet]]' cannot be used for return type 'System.Collections.Generic.IEnumerable`1[ElasticsearchQueryLucene.Demo.Pet]'
+            Type: System.ArgumentException
+            Stack Trace:
+               at System.Linq.Expressions.Expression.ValidateLambdaArgs(Type delegateType, Expression& body, ReadOnlyCollection`1 parameters, String paramName)
+   at System.Linq.Expressions.Expression.Lambda[TDelegate](Expression body, String name, Boolean tailCall, IEnumerable`1 parameters)
+   at System.Linq.Expressions.Expression.Lambda[TDelegate](Expression body, ParameterExpression[] parameters)
+   at Microsoft.EntityFrameworkCore.Query.QueryCompilationContext.CreateQueryExecutorExpression[TResult](Expression query)
+   at Microsoft.EntityFrameworkCore.Query.QueryCompilationContext.CreateQueryExecutor[TResult](Expression query)
+   at Microsoft.EntityFrameworkCore.Storage.Database.CompileQuery[TResult](Expression query, Boolean async)
+   at Microsoft.EntityFrameworkCore.Query.Internal.QueryCompiler.CompileQueryCore[TResult](IDatabase database, Expression query, IModel model, Boolean async)
+   at Microsoft.EntityFrameworkCore.Query.Internal.QueryCompiler.<>c__DisplayClass11_0`1.<ExecuteCore>b__0()
+   at Microsoft.EntityFrameworkCore.Query.Internal.CompiledQueryCache.GetOrAddQuery[TResult](Object cacheKey, Func`1 compiler)
+   at Microsoft.EntityFrameworkCore.Query.Internal.QueryCompiler.ExecuteCore[TResult](Expression query, Boolean async, CancellationToken cancellationToken)
+   at Microsoft.EntityFrameworkCore.Query.Internal.QueryCompiler.Execute[TResult](Expression query)
+   at Microsoft.EntityFrameworkCore.Query.Internal.EntityQueryProvider.Execute[TResult](Expression expression)
+   at Microsoft.EntityFrameworkCore.Query.Internal.EntityQueryable`1.GetEnumerator()
+   at System.Collections.Generic.List`1..ctor(IEnumerable`1 collection)
+   at System.Linq.Enumerable.ToList[TSource](IEnumerable`1 source)
+   at ElasticsearchQueryLucene.Demo.Program.RunDemo() in D:\study\google-antigravity\elasticsearch-query-lucene\Example\ElasticsearchQueryLucene.Demo\Program.cs:line 103
+   at ElasticsearchQueryLucene.Demo.Program.Main() in D:\study\google-antigravity\elasticsearch-query-lucene\Example\ElasticsearchQueryLucene.Demo\Program.cs:line 18
+
+            
+
+            ====================================

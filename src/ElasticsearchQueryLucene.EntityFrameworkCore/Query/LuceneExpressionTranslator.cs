@@ -135,15 +135,20 @@ public class LuceneExpressionTranslator : ExpressionVisitor
             return constant.Value;
         }
 
-        if (expression is MemberExpression member)
+        // Generic fallback: Attempt to evaluate the expression by compiling it.
+        // This handles MemberExpression (closures), MethodCallExpression, and some Extension expressions.
+        // Note: This will fail if the expression depends on query parameters (which we can't evaluate here).
+        try
         {
-            var objectMember = Expression.Convert(member, typeof(object));
+            var objectMember = Expression.Convert(expression, typeof(object));
             var getterLambda = Expression.Lambda<Func<object>>(objectMember);
             var getter = getterLambda.Compile();
             return getter();
         }
-
-        throw new NotSupportedException($"Cannot extract value from expression type {expression.NodeType}");
+        catch (Exception ex)
+        {
+            throw new NotSupportedException($"Cannot extract value from expression type {expression.NodeType}: {expression}. Error: {ex.Message}", ex);
+        }
     }
 
     private static string EscapeValue(object? value)

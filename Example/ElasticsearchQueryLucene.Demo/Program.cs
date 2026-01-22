@@ -19,7 +19,23 @@ public class Program
         }
         catch (Exception ex)
         {
-            Console.WriteLine($"\nCRITICAL ERROR: {ex}");
+            var errorMsg = $@"
+            ========== CRITICAL ERROR ==========
+            Message: {ex.Message}
+            Type: {ex.GetType().FullName}
+            Stack Trace:
+            {ex.StackTrace}
+
+            {(ex.InnerException != null ? $@"--- Inner Exception ---
+            Message: {ex.InnerException.Message}
+            Type: {ex.InnerException.GetType().FullName}
+            Stack Trace:
+            {ex.InnerException.StackTrace}" : "")}
+
+            ====================================";
+            
+            Console.WriteLine(errorMsg);
+            System.IO.File.WriteAllText("error_details.txt", errorMsg);
         }
     }
 
@@ -45,9 +61,13 @@ public class Program
             .UseLucene(luceneDir, "pets")
             .Options;
 
-        using (var context = new PetContext(options))
+        try
         {
-            context.Database.EnsureCreated();
+            Console.WriteLine("Creating context...");
+            using (var context = new PetContext(options))
+            {
+                Console.WriteLine("Context created successfully!");
+                context.Database.EnsureCreated();
             
             context.Pets.AddRange(
                 new Pet { Id = 1, Name = "Buddy", Breed = "Golden Retriever", Age = 3, Description = "Very friendly and loves playing fetch.", IsAdopted = false },
@@ -58,6 +78,19 @@ public class Program
             context.SaveChanges();
             Console.WriteLine("   -> 4 Pets added.");
         }
+        }
+        catch (Exception ex)
+        {
+            Console.WriteLine($"\n!!! Error creating/using context !!!");
+            Console.WriteLine($"Message: {ex.Message}");
+            Console.WriteLine($"Type: {ex.GetType().FullName}");
+            if (ex.InnerException != null)
+            {
+                Console.WriteLine($"Inner: {ex.InnerException.Message}");
+                Console.WriteLine($"Inner Type: {ex.InnerException.GetType().FullName}");
+            }
+            throw;
+        }
 
         // 2. READ & SEARCH
         using (var context = new PetContext(options))
@@ -65,33 +98,33 @@ public class Program
             Console.WriteLine("\n[2] Search Demonstrations:");
             
             // A. Basic LINQ (Full Text)
-            var term = "loves";
+            /*var term = "loves";
             Console.WriteLine($"   A. Searching for '{term}' (Contains):");
-            var results = context.Pets
-                .Where(p => p.Description.Contains(term))
+            var results = context.Pets.AsNoTracking()
+                .Where(p => p.Description.Contains("loves"))
                 .ToList();
-            PrintPets(results);
+            PrintPets(results);*/
 
             // B. Exact Match
-            Console.WriteLine("   B. Filter by Breed == 'Siamese Cat':");
-            var cats = context.Pets
+            /*Console.WriteLine("   B. Filter by Breed == 'Siamese Cat':");
+            var cats = context.Pets.AsNoTracking()
                 .Where(p => p.Breed == "Siamese Cat")
                 .ToList();
-            PrintPets(cats);
+            PrintPets(cats);*/
 
             // C. Ordering
-            Console.WriteLine("   C. Ordered by Age Descending:");
-            var ordered = context.Pets
+           /* Console.WriteLine("   C. Ordered by Age Descending:");
+            var ordered = context.Pets.AsNoTracking()
                 .OrderByDescending(p => p.Age)
                 .ToList();
             PrintPets(ordered);
-            
+            */
             // D. Raw Lucene Match (Fuzzy)
             // 'inteligent' is typo for 'intelligent'
             var fuzzyQuery = "inteligent~"; 
             Console.WriteLine($"   D. Raw Lucene Fuzzy Search ('{fuzzyQuery}'):");
-            var fuzzyResults = context.Pets
-                .Where(p => EF.Functions.LuceneMatch(p.Description, fuzzyQuery))
+            var fuzzyResults = context.Pets.AsNoTracking()
+                .Where(p => EF.Functions.LuceneMatch(p.Description, "inteligent~"))
                 .ToList();
             PrintPets(fuzzyResults);
         }

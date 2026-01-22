@@ -32,9 +32,9 @@ public class LuceneShapedQueryCompilingExpressionVisitor : ShapedQueryCompilingE
         var sortAscending = luceneQuery.SortFields.Select(s => s.Ascending).ToArray();
 
         // Create the query execution expression
+        // ExecuteLuceneQuery(queryContext, queryString, skip, take, sortFields, sortAscending, entityType)
         var executeMethod = typeof(LuceneShapedQueryCompilingExpressionVisitor)
-            .GetMethod(nameof(ExecuteLuceneQuery), System.Reflection.BindingFlags.Static | System.Reflection.BindingFlags.NonPublic)!
-            .MakeGenericMethod(luceneQuery.EntityType.ClrType);
+            .GetMethod(nameof(ExecuteLuceneQuery), System.Reflection.BindingFlags.Static | System.Reflection.BindingFlags.NonPublic)!;
 
         var executeCall = Expression.Call(
             executeMethod,
@@ -43,18 +43,32 @@ public class LuceneShapedQueryCompilingExpressionVisitor : ShapedQueryCompilingE
             Expression.Constant(luceneQuery.Skip, typeof(int?)),
             Expression.Constant(luceneQuery.Take, typeof(int?)),
             Expression.Constant(sortFieldsStr),
-            Expression.Constant(sortAscending));
+            Expression.Constant(sortAscending),
+            Expression.Constant(luceneQuery.EntityType, typeof(Microsoft.EntityFrameworkCore.Metadata.IEntityType)));
 
-        return Expression.Lambda(executeCall, queryContextParameter);
+        // Apply Shaper: IEnumerable<object[]> -> IEnumerable<TEntity>
+        var shaper = (LambdaExpression)shapedQueryExpression.ShaperExpression;
+        var shaperDelegate = shaper.Compile(); // Compile Expression -> Delegate
+        
+        // Enumerable.Select(executeCall, shaperDelegate)
+        var selectMethod = typeof(Enumerable).GetMethods()
+            .First(m => m.Name == "Select" && m.GetParameters().Length == 2)
+            .MakeGenericMethod(typeof(object[]), shaper.ReturnType);
+
+        var shapedCall = Expression.Call(selectMethod, executeCall, Expression.Constant(shaperDelegate));
+
+        return Expression.Lambda(shapedCall, queryContextParameter);
     }
 
-    private static IEnumerable<T> ExecuteLuceneQuery<T>(
+
+    private static IEnumerable<object[]> ExecuteLuceneQuery(
         QueryContext queryContext,
         string luceneQueryString,
         int? skip,
         int? take,
         string[] sortFields,
-        bool[] sortAscending) where T : class, new()
+        bool[] sortAscending,
+        Microsoft.EntityFrameworkCore.Metadata.IEntityType entityType)
     {
         // Get the Lucene directory from the context
         var luceneContext = queryContext as LuceneQueryContext;
@@ -90,15 +104,17 @@ public class LuceneShapedQueryCompilingExpressionVisitor : ShapedQueryCompilingE
             var sortFieldList = new List<SortField>();
             for (int i = 0; i < sortFields.Length; i++)
             {
-                // Detect sort type based on property type
-                var prop = typeof(T).GetProperty(sortFields[i]);
+                // Detect sort type based on property type from EntityType
+                var propName = sortFields[i];
+                var prop = entityType.FindProperty(propName);
+                
                 var sortType = SortFieldType.STRING;
                 if (prop != null)
                 {
-                    if (prop.PropertyType == typeof(int) || prop.PropertyType == typeof(int?)) sortType = SortFieldType.INT32;
-                    else if (prop.PropertyType == typeof(long) || prop.PropertyType == typeof(long?)) sortType = SortFieldType.INT64;
-                    else if (prop.PropertyType == typeof(float) || prop.PropertyType == typeof(float?)) sortType = SortFieldType.SINGLE;
-                    else if (prop.PropertyType == typeof(double) || prop.PropertyType == typeof(double?)) sortType = SortFieldType.DOUBLE;
+                    if (prop.ClrType == typeof(int) || prop.ClrType == typeof(int?)) sortType = SortFieldType.INT32;
+                    else if (prop.ClrType == typeof(long) || prop.ClrType == typeof(long?)) sortType = SortFieldType.INT64;
+                    else if (prop.ClrType == typeof(float) || prop.ClrType == typeof(float?)) sortType = SortFieldType.SINGLE;
+                    else if (prop.ClrType == typeof(double) || prop.ClrType == typeof(double?)) sortType = SortFieldType.DOUBLE;
                 }
                 
                 sortFieldList.Add(new SortField(sortFields[i], sortType, !sortAscending[i]));
@@ -112,7 +128,6 @@ public class LuceneShapedQueryCompilingExpressionVisitor : ShapedQueryCompilingE
         
         if (sort != null)
         {
-            // Search with matching, N filters, max items, and Sort
             topDocs = searcher.Search(query, null, maxResults, sort);
         }
         else
@@ -125,33 +140,36 @@ public class LuceneShapedQueryCompilingExpressionVisitor : ShapedQueryCompilingE
         var endIndex = take.HasValue ? startIndex + take.Value : topDocs.ScoreDocs.Length;
         endIndex = Math.Min(endIndex, topDocs.ScoreDocs.Length);
 
-        // Materialize results
+        var properties = entityType.GetProperties().ToList();
+        
+        // Materialize results as object[]
         for (int i = startIndex; i < endIndex; i++)
         {
             var scoreDoc = topDocs.ScoreDocs[i];
             var doc = searcher.Doc(scoreDoc.Doc);
             
-            var entity = new T();
-            var properties = typeof(T).GetProperties();
+            var values = new object[properties.Count];
             
-            foreach (var prop in properties)
+            for (int j = 0; j < properties.Count; j++)
             {
+                var prop = properties[j];
                 var fieldValue = doc.Get(prop.Name);
+                
                 if (fieldValue != null)
                 {
                     try
                     {
-                        var convertedValue = Convert.ChangeType(fieldValue, prop.PropertyType);
-                        prop.SetValue(entity, convertedValue);
+                        var convertedValue = Convert.ChangeType(fieldValue, prop.ClrType);
+                        values[j] = convertedValue;
                     }
                     catch
                     {
-                        // Skip properties that can't be converted
+                        // defaults
                     }
                 }
             }
             
-            yield return entity;
+            yield return values;
         }
     }
 }

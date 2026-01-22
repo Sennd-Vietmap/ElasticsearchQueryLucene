@@ -1,0 +1,24 @@
+﻿D:\study\google-antigravity\elasticsearch-query-lucene\src\ElasticsearchQueryLucene.Core\ElasticsearchQueryLucene.Core.csproj : warning NU1510: PackageReference System.Text.Json will not be pruned. Consider removing this package from your dependencies, as it is likely unnecessary. [D:\study\google-antigravity\elasticsearch-query-lucene\Example\ElasticsearchQueryLucene.Demo\ElasticsearchQueryLucene.Demo.csproj]
+D:\study\google-antigravity\elasticsearch-query-lucene\src\ElasticsearchQueryLucene.Core\ElasticsearchQueryLucene.Core.csproj : warning NU1510: PackageReference System.Text.Json will not be pruned. Consider removing this package from your dependencies, as it is likely unnecessary.
+D:\study\google-antigravity\elasticsearch-query-lucene\src\ElasticsearchQueryLucene.Core\ElasticsearchQueryLucene.Core.csproj : warning NU1510: PackageReference System.Text.Json will not be pruned. Consider removing this package from your dependencies, as it is likely unnecessary.
+≡ƒÉ░ Lucenet's Pet Shelter Demo ≡ƒÉ╢
+=================================
+Index Path: D:\study\google-antigravity\elasticsearch-query-lucene\Example\ElasticsearchQueryLucene.Demo\bin\Debug\net10.0\pet_index
+
+[1] Seeding Data...
+
+========== CRITICAL ERROR ==========
+Message: No service for type 'Microsoft.EntityFrameworkCore.Internal.ISingletonOptionsInitializer' has been registered.
+Type: System.InvalidOperationException
+Stack Trace:
+   at Microsoft.Extensions.DependencyInjection.ServiceProviderServiceExtensions.GetRequiredService(IServiceProvider provider, Type serviceType)
+   at Microsoft.Extensions.DependencyInjection.ServiceProviderServiceExtensions.GetRequiredService[T](IServiceProvider provider)
+   at Microsoft.EntityFrameworkCore.Internal.ServiceProviderCache.<GetOrAdd>g__BuildServiceProvider|4_1(IDbContextOptions _, ValueTuple`2 arguments)
+   at Microsoft.EntityFrameworkCore.Internal.ServiceProviderCache.<>c.<GetOrAdd>b__4_0(IDbContextOptions contextOptions, ValueTuple`2 tuples)
+   at System.Collections.Concurrent.ConcurrentDictionary`2.GetOrAdd[TArg](TKey key, Func`3 valueFactory, TArg factoryArgument)
+   at Microsoft.EntityFrameworkCore.Internal.ServiceProviderCache.GetOrAdd(IDbContextOptions options, Boolean providerRequired)
+   at Microsoft.EntityFrameworkCore.DbContext..ctor(DbContextOptions options)
+   at ElasticsearchQueryLucene.Demo.PetContext..ctor(DbContextOptions options) in D:\study\google-antigravity\elasticsearch-query-lucene\Example\ElasticsearchQueryLucene.Demo\Program.cs:line 170
+   at ElasticsearchQueryLucene.Demo.Program.RunDemo() in D:\study\google-antigravity\elasticsearch-query-lucene\Example\ElasticsearchQueryLucene.Demo\Program.cs:line 61
+   at ElasticsearchQueryLucene.Demo.Program.Main() in D:\study\google-antigravity\elasticsearch-query-lucene\Example\ElasticsearchQueryLucene.Demo\Program.cs:line 18
+====================================

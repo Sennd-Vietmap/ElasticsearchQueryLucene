@@ -9,27 +9,21 @@ using Microsoft.EntityFrameworkCore.Update;
 
 namespace ElasticsearchQueryLucene.EntityFrameworkCore.Storage;
 
-public class LuceneDatabaseWrapper : IDatabase
+public class LuceneDatabaseWrapper : Database
 {
     private readonly ILuceneDatabase _luceneDatabase;
 
-    public LuceneDatabaseWrapper(ILuceneDatabase luceneDatabase)
+    public LuceneDatabaseWrapper(
+        DatabaseDependencies dependencies,
+        ILuceneDatabase luceneDatabase)
+        : base(dependencies)
     {
         _luceneDatabase = luceneDatabase;
     }
 
-    public int SaveChanges(IList<IUpdateEntry> entries) => _luceneDatabase.SaveChanges(entries);
+    public override int SaveChanges(IList<IUpdateEntry> entries)
+        => _luceneDatabase.SaveChanges(entries);
 
-    public Task<int> SaveChangesAsync(IList<IUpdateEntry> entries, CancellationToken cancellationToken)
+    public override Task<int> SaveChangesAsync(IList<IUpdateEntry> entries, CancellationToken cancellationToken = default)
         => _luceneDatabase.SaveChangesAsync(entries, cancellationToken);
-
-    public Func<QueryContext, TResult> CompileQuery<TResult>(Expression query, bool async)
-    {
-        throw new NotImplementedException();
-    }
-
-    public Expression<Func<QueryContext, TResult>> CompileQueryExpression<TResult>(Expression query, bool async)
-    {
-        throw new NotImplementedException();
-    }
 }
