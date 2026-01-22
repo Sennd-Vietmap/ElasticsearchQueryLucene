@@ -1,11 +1,10 @@
 
             ========== CRITICAL ERROR ==========
-            Message: Expression of type 'System.Func`2[Microsoft.EntityFrameworkCore.Query.QueryContext,System.Collections.Generic.IEnumerable`1[ElasticsearchQueryLucene.Demo.Pet]]' cannot be used for return type 'System.Collections.Generic.IEnumerable`1[ElasticsearchQueryLucene.Demo.Pet]'
-            Type: System.ArgumentException
+            Message: The LINQ expression 'DbSet<Pet>()
+    .Count()' could not be translated. Either rewrite the query in a form that can be translated, or switch to client evaluation explicitly by inserting a call to 'AsEnumerable', 'AsAsyncEnumerable', 'ToList', or 'ToListAsync'. See https://go.microsoft.com/fwlink/?linkid=2101038 for more information.
+            Type: System.InvalidOperationException
             Stack Trace:
-               at System.Linq.Expressions.Expression.ValidateLambdaArgs(Type delegateType, Expression& body, ReadOnlyCollection`1 parameters, String paramName)
-   at System.Linq.Expressions.Expression.Lambda[TDelegate](Expression body, String name, Boolean tailCall, IEnumerable`1 parameters)
-   at System.Linq.Expressions.Expression.Lambda[TDelegate](Expression body, ParameterExpression[] parameters)
+               at Microsoft.EntityFrameworkCore.Query.QueryableMethodTranslatingExpressionVisitor.Translate(Expression expression)
    at Microsoft.EntityFrameworkCore.Query.QueryCompilationContext.CreateQueryExecutorExpression[TResult](Expression query)
    at Microsoft.EntityFrameworkCore.Query.QueryCompilationContext.CreateQueryExecutor[TResult](Expression query)
    at Microsoft.EntityFrameworkCore.Storage.Database.CompileQuery[TResult](Expression query, Boolean async)
@@ -15,10 +14,7 @@
    at Microsoft.EntityFrameworkCore.Query.Internal.QueryCompiler.ExecuteCore[TResult](Expression query, Boolean async, CancellationToken cancellationToken)
    at Microsoft.EntityFrameworkCore.Query.Internal.QueryCompiler.Execute[TResult](Expression query)
    at Microsoft.EntityFrameworkCore.Query.Internal.EntityQueryProvider.Execute[TResult](Expression expression)
-   at Microsoft.EntityFrameworkCore.Query.Internal.EntityQueryable`1.GetEnumerator()
-   at System.Collections.Generic.List`1..ctor(IEnumerable`1 collection)
-   at System.Linq.Enumerable.ToList[TSource](IEnumerable`1 source)
-   at ElasticsearchQueryLucene.Demo.Program.RunDemo() in D:\study\google-antigravity\elasticsearch-query-lucene\Example\ElasticsearchQueryLucene.Demo\Program.cs:line 103
+   at ElasticsearchQueryLucene.Demo.Program.RunDemo() in D:\study\google-antigravity\elasticsearch-query-lucene\Example\ElasticsearchQueryLucene.Demo\Program.cs:line 171
    at ElasticsearchQueryLucene.Demo.Program.Main() in D:\study\google-antigravity\elasticsearch-query-lucene\Example\ElasticsearchQueryLucene.Demo\Program.cs:line 18
 
             

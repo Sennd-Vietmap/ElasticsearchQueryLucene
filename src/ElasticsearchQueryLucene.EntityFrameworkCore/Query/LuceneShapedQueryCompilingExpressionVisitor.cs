@@ -5,6 +5,10 @@ using System.Linq.Expressions;
 using Lucene.Net.Index;
 using Lucene.Net.Search;
 using Microsoft.EntityFrameworkCore.Query;
+using Lucene.Net.Analysis.Miscellaneous;
+using Lucene.Net.Analysis.Core;
+using Lucene.Net.Analysis.Standard;
+using ElasticsearchQueryLucene.EntityFrameworkCore.Metadata;
 
 namespace ElasticsearchQueryLucene.EntityFrameworkCore.Query;
 
@@ -25,7 +29,8 @@ public class LuceneShapedQueryCompilingExpressionVisitor : ShapedQueryCompilingE
         }
 
         // Build a lambda that executes the Lucene query
-        var queryContextParameter = Expression.Parameter(typeof(QueryContext), "queryContext");
+        // Use the QueryContextParameter from the compilation context to ensure parameter binding works (no double wrapping)
+        var queryContextParameter = QueryCompilationContext.QueryContextParameter;
         
         // Extract sort fields
         var sortFieldsStr = luceneQuery.SortFields.Select(s => s.Field).ToArray();
@@ -57,7 +62,8 @@ public class LuceneShapedQueryCompilingExpressionVisitor : ShapedQueryCompilingE
 
         var shapedCall = Expression.Call(selectMethod, executeCall, Expression.Constant(shaperDelegate));
 
-        return Expression.Lambda(shapedCall, queryContextParameter);
+        // Return the body directly. Do NOT wrap in Expression.Lambda as the caller will do that.
+        return shapedCall;
     }
 
 
@@ -81,10 +87,31 @@ public class LuceneShapedQueryCompilingExpressionVisitor : ShapedQueryCompilingE
         var searcher = new IndexSearcher(reader);
 
         // Parse the Lucene query string
+        // Build PerFieldAnalyzer based on EntityType attributes
+        var defaultAnalyzer = new StandardAnalyzer(Lucene.Net.Util.LuceneVersion.LUCENE_48);
+        var fieldAnalyzers = new Dictionary<string, Lucene.Net.Analysis.Analyzer>();
+        
+        foreach (var prop in entityType.GetProperties())
+        {
+            var attr = prop.PropertyInfo?.GetCustomAttributes(typeof(LuceneFieldAttribute), true)
+                        .OfType<LuceneFieldAttribute>().FirstOrDefault();
+                        
+            if (attr != null && !attr.Tokenized)
+            {
+                // Use KeywordAnalyzer for non-tokenized fields
+                fieldAnalyzers[prop.Name] = new KeywordAnalyzer();
+            }
+        }
+        
+        var analyzer = new PerFieldAnalyzerWrapper(defaultAnalyzer, fieldAnalyzers);
+
+        // Parse the Lucene query string
         var parser = new Lucene.Net.QueryParsers.Classic.QueryParser(
             Lucene.Net.Util.LuceneVersion.LUCENE_48,
-            "_all", // Default field
-            new Lucene.Net.Analysis.Standard.StandardAnalyzer(Lucene.Net.Util.LuceneVersion.LUCENE_48));
+            "_all", 
+            analyzer);
+        
+        parser.AllowLeadingWildcard = true;
 
         Lucene.Net.Search.Query query;
         try

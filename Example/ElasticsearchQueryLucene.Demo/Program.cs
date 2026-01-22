@@ -96,29 +96,29 @@ public class Program
         using (var context = new PetContext(options))
         {
             Console.WriteLine("\n[2] Search Demonstrations:");
-            
+
             // A. Basic LINQ (Full Text)
-            /*var term = "loves";
+            var term = "loves";
             Console.WriteLine($"   A. Searching for '{term}' (Contains):");
             var results = context.Pets.AsNoTracking()
                 .Where(p => p.Description.Contains("loves"))
                 .ToList();
-            PrintPets(results);*/
+            PrintPets(results);
 
             // B. Exact Match
-            /*Console.WriteLine("   B. Filter by Breed == 'Siamese Cat':");
+            Console.WriteLine("   B. Filter by Breed == 'Siamese Cat':");
             var cats = context.Pets.AsNoTracking()
                 .Where(p => p.Breed == "Siamese Cat")
                 .ToList();
-            PrintPets(cats);*/
+            PrintPets(cats);
 
             // C. Ordering
-           /* Console.WriteLine("   C. Ordered by Age Descending:");
+            Console.WriteLine("   C. Ordered by Age Descending:");
             var ordered = context.Pets.AsNoTracking()
                 .OrderByDescending(p => p.Age)
                 .ToList();
             PrintPets(ordered);
-            */
+
             // D. Raw Lucene Match (Fuzzy)
             // 'inteligent' is typo for 'intelligent'
             var fuzzyQuery = "inteligent~"; 
@@ -168,7 +168,7 @@ public class Program
         // Verify Delete
         using (var context = new PetContext(options))
         {
-            var count = context.Pets.Count();
+            var count = context.Pets.ToList().Count;
             Console.WriteLine($"   Total Pets Remaining: {count} (Expected 3)");
         }
         

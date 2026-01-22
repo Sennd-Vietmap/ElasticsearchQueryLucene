@@ -85,7 +85,11 @@ public class LuceneExpressionTranslator : ExpressionVisitor
             // String.Contains
             Visit(node.Object);
             var value = GetValue(node.Arguments[0]);
-            _queryBuilder.Append($"{_currentFieldName}:*{EscapeValue(value)}*");
+            
+            // StandardAnalyzer lowercases tokens. Wildcard queries are NOT analyzed, so we must manually lowercase to match.
+            var stringValue = value?.ToString()?.ToLowerInvariant();
+
+            _queryBuilder.Append($"{_currentFieldName}:*{EscapeValue(stringValue)}*");
         }
         else if (node.Method.Name == "StartsWith" && node.Object != null)
         {
@@ -118,7 +122,12 @@ public class LuceneExpressionTranslator : ExpressionVisitor
     {
         Visit(node.Left);
         var value = GetValue(node.Right);
-        _queryBuilder.Append($"{_currentFieldName}:{EscapeValue(value)}");
+        var escaped = EscapeValue(value);
+        if (value is string)
+        {
+             escaped = $"\"{escaped}\"";
+        }
+        _queryBuilder.Append($"{_currentFieldName}:{escaped}");
     }
 
     private void TranslateComparison(BinaryExpression node, string prefix, string suffix)
