@@ -31,7 +31,7 @@ public class LuceneExpressionTranslatorTests
         var result = _translator.Translate(predicate.Body);
 
         // Assert
-        Assert.Equal("Category:Books", result);
+        Assert.Equal("Category:\"Books\"", result);
     }
 
     [Fact]
@@ -58,7 +58,7 @@ public class LuceneExpressionTranslatorTests
 
         // Assert
         Assert.Contains("AND", result);
-        Assert.Contains("Category:Books", result);
+        Assert.Contains("Category:\"Books\"", result);
         Assert.Contains("Price:", result);
     }
 
@@ -73,8 +73,8 @@ public class LuceneExpressionTranslatorTests
 
         // Assert
         Assert.Contains("OR", result);
-        Assert.Contains("Category:Books", result);
-        Assert.Contains("Category:Electronics", result);
+        Assert.Contains("Category:\"Books\"", result);
+        Assert.Contains("Category:\"Electronics\"", result);
     }
 
     [Fact]
@@ -88,7 +88,7 @@ public class LuceneExpressionTranslatorTests
 
         // Assert
         Assert.Contains("NOT", result);
-        Assert.Contains("Category:Books", result);
+        Assert.Contains("Category:\"Books\"", result);
     }
 
     [Fact]
@@ -153,7 +153,7 @@ public class LuceneExpressionTranslatorTests
         var result = _translator.Translate(predicate.Body);
 
         // Assert
-        Assert.Equal("Name:*Test*", result);
+        Assert.Equal("Name:*test*", result);
     }
 
     [Fact]
@@ -195,8 +195,8 @@ public class LuceneExpressionTranslatorTests
         // Assert
         Assert.Contains("AND", result);
         Assert.Contains("OR", result);
-        Assert.Contains("Category:Books", result);
-        Assert.Contains("Category:Electronics", result);
+        Assert.Contains("Category:\"Books\"", result);
+        Assert.Contains("Category:\"Electronics\"", result);
         Assert.Contains("Price:", result);
     }
 
@@ -211,7 +211,7 @@ public class LuceneExpressionTranslatorTests
         var result = _translator.Translate(predicate.Body);
 
         // Assert
-        Assert.Contains("Category:Books", result);
+        Assert.Contains("Category:\"Books\"", result);
         Assert.Contains("Price:{10 TO *]", result);
         Assert.Contains("Price:[* TO 100 }", result);
         var andCount = result.Split("AND").Length - 1;
@@ -231,7 +231,7 @@ public class LuceneExpressionTranslatorTests
         // Assert
         Assert.Contains("OR", result);
         Assert.Contains("AND", result);
-        Assert.Contains("Category:Books", result);
-        Assert.Contains("Category:Electronics", result);
+        Assert.Contains("Category:\"Books\"", result);
+        Assert.Contains("Category:\"Electronics\"", result);
     }
 }

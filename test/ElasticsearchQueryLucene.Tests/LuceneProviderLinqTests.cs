@@ -38,7 +38,7 @@ public class LuceneProviderLinqTests
         var luceneQuery = _translator.Translate(predicate.Body);
 
         // Assert
-        Assert.Equal("Category:Books", luceneQuery);
+        Assert.Equal("Category:\"Books\"", luceneQuery);
     }
 
     [Fact]
@@ -51,7 +51,7 @@ public class LuceneProviderLinqTests
         var luceneQuery = _translator.Translate(predicate.Body);
 
         // Assert
-        Assert.Contains("Category:Books", luceneQuery);
+        Assert.Contains("Category:\"Books\"", luceneQuery);
         Assert.Contains("Price:{10 TO *]", luceneQuery);
         Assert.Contains("AND", luceneQuery);
     }
@@ -66,8 +66,8 @@ public class LuceneProviderLinqTests
         var luceneQuery = _translator.Translate(predicate.Body);
 
         // Assert
-        Assert.Contains("Category:Books", luceneQuery);
-        Assert.Contains("Category:Electronics", luceneQuery);
+        Assert.Contains("Category:\"Books\"", luceneQuery);
+        Assert.Contains("Category:\"Electronics\"", luceneQuery);
         Assert.Contains("OR", luceneQuery);
     }
 
@@ -81,7 +81,7 @@ public class LuceneProviderLinqTests
         var luceneQuery = _translator.Translate(predicate.Body);
 
         // Assert
-        Assert.Equal("Name:*Test*", luceneQuery);
+        Assert.Equal("Name:*test*", luceneQuery);
     }
 
     [Fact]
@@ -108,7 +108,7 @@ public class LuceneProviderLinqTests
         var luceneQuery = _translator.Translate(predicate.Body);
 
         // Assert
-        Assert.Contains("Category:Books", luceneQuery);
+        Assert.Contains("Category:\"Books\"", luceneQuery);
         Assert.Contains("Name:(term)", luceneQuery);
         Assert.Contains("AND", luceneQuery);
     }

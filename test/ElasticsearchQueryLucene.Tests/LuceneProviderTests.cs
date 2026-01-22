@@ -26,7 +26,7 @@ public class LuceneProviderTests
     public void MetadataAnnotation_Stored_SetsAnnotation()
     {
         var options = new DbContextOptionsBuilder<TestDbContext>()
-            .UseInMemoryDatabase("Test") // Using in-memory to get a model builder
+            .UseLucene(new RAMDirectory(), "Test") 
             .Options;
 
         using var context = new TestDbContext(options);
@@ -41,8 +41,7 @@ public class LuceneProviderTests
     public void AttributeAnnotation_SetsAnnotation()
     {
         var options = new DbContextOptionsBuilder<TestDbContext>()
-            .UseInMemoryDatabase("AttributeTest")
-            .UseLucene(new RAMDirectory())
+            .UseLucene(new RAMDirectory(), "AttributeTest")
             .Options;
 
         using var context = new TestDbContext(options);
