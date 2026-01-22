@@ -6,6 +6,7 @@ using Lucene.Net.Store;
 using Lucene.Net.Util;
 using ElasticsearchQueryLucene.EntityFrameworkCore.Extensions;
 using ElasticsearchQueryLucene.EntityFrameworkCore.Metadata;
+using Microsoft.Extensions.Logging;
 
 namespace ElasticsearchQueryLucene.Demo;
 
@@ -55,10 +56,18 @@ public class Program
         // Open Lucene Directory
         using var luceneDir = new RAMDirectory();
 
+        // Setup Logging
+        using var loggerFactory = Microsoft.Extensions.Logging.LoggerFactory.Create(builder =>
+        {
+            builder.AddConsole();
+            builder.SetMinimumLevel(Microsoft.Extensions.Logging.LogLevel.Information);
+        });
+
         // 1. CREATE
         Console.WriteLine("\n[1] Seeding Data...");
         var options = new DbContextOptionsBuilder<PetContext>()
             .UseLucene(luceneDir, "pets")
+            .UseLoggerFactory(loggerFactory)
             .Options;
 
         try

@@ -15,6 +15,7 @@ public class LuceneExpressionTranslator : ExpressionVisitor
     private readonly StringBuilder _queryBuilder = new();
     private string? _currentFieldName;
     private IProperty? _currentProperty;
+    private float? _currentBoost;
 
     public LuceneExpressionTranslator(ITypeMappingSource typeMappingSource)
     {
@@ -26,6 +27,7 @@ public class LuceneExpressionTranslator : ExpressionVisitor
         _queryBuilder.Clear();
         _currentFieldName = null;
         _currentProperty = null;
+        _currentBoost = null;
         Visit(expression);
         return _queryBuilder.ToString();
     }
@@ -129,6 +131,12 @@ public class LuceneExpressionTranslator : ExpressionVisitor
             // Do NOT escape the query value here as it's meant to be raw Lucene syntax
             _queryBuilder.Append($"{_currentFieldName}:({query})");
         }
+        else if (node.Method.Name == "Boost" && node.Method.DeclaringType?.Name == "LuceneDbFunctionsExtensions")
+        {
+            var boost = (float)GetValue(node.Arguments[2])!;
+            _currentBoost = boost;
+            return Visit(node.Arguments[1]);
+        }
         else
         {
             throw new NotSupportedException($"Method {node.Method.Name} is not supported.");
@@ -146,6 +154,7 @@ public class LuceneExpressionTranslator : ExpressionVisitor
              escaped = $"\"{escaped}\"";
         }
         _queryBuilder.Append($"{_currentFieldName}:{escaped}");
+        ApplyBoost();
     }
 
     private void TranslateComparison(BinaryExpression node, string prefix, string suffix)
@@ -153,6 +162,16 @@ public class LuceneExpressionTranslator : ExpressionVisitor
         Visit(node.Left);
         var value = GetValue(node.Right);
         _queryBuilder.Append($"{_currentFieldName}:{prefix}{GetTranslatedValue(value)} {suffix}");
+        ApplyBoost();
+    }
+
+    private void ApplyBoost()
+    {
+        if (_currentBoost.HasValue)
+        {
+            _queryBuilder.Append($"^{_currentBoost.Value.ToString(System.Globalization.CultureInfo.InvariantCulture)}");
+            _currentBoost = null;
+        }
     }
 
     private string GetTranslatedValue(object? value)

@@ -8,6 +8,7 @@ using ElasticsearchQueryLucene.EntityFrameworkCore.Metadata;
 using Lucene.Net.Analysis.Standard;
 using Lucene.Net.Documents;
 using Lucene.Net.Index;
+using Lucene.Net.Search;
 using Lucene.Net.Util;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Infrastructure;
@@ -69,6 +70,62 @@ public class LuceneDatabase : ILuceneDatabase
     public Task<int> SaveChangesAsync(IList<IUpdateEntry> entries, CancellationToken cancellationToken)
     {
         return Task.FromResult(SaveChanges(entries));
+    }
+
+    public IEnumerable<IReadOnlyDictionary<string, string[]>> GetIndexDocuments(int skip = 0, int take = 100, string? query = null)
+    {
+        var extension = _options.FindExtension<LuceneDbContextOptionsExtension>();
+        if (extension?.LuceneDirectory == null) yield break;
+
+        if (!DirectoryReader.IndexExists(extension.LuceneDirectory)) yield break;
+
+        using var reader = DirectoryReader.Open(extension.LuceneDirectory);
+        var searcher = new IndexSearcher(reader);
+        
+        Lucene.Net.Search.Query luceneQuery;
+        if (string.IsNullOrWhiteSpace(query))
+        {
+            luceneQuery = new MatchAllDocsQuery();
+        }
+        else
+        {
+            try
+            {
+                var parser = new Lucene.Net.QueryParsers.Classic.QueryParser(LuceneVersion.LUCENE_48, "__pk", new StandardAnalyzer(LuceneVersion.LUCENE_48));
+                parser.AllowLeadingWildcard = true;
+                luceneQuery = parser.Parse(query);
+            }
+            catch
+            {
+                // Fallback if query is invalid
+                luceneQuery = new MatchAllDocsQuery();
+            }
+        }
+
+        var topDocs = searcher.Search(luceneQuery, (skip + take));
+        var end = Math.Min(skip + take, topDocs.ScoreDocs.Length);
+
+        for (int i = skip; i < end; i++)
+        {
+            var doc = searcher.Doc(topDocs.ScoreDocs[i].Doc);
+            var dict = new Dictionary<string, string[]>();
+            foreach (var field in doc.Fields)
+            {
+                var val = field.GetStringValue() ?? field.GetNumericValue()?.ToString() ?? "(binary)";
+                if (dict.TryGetValue(field.Name, out var values))
+                {
+                    var newValues = new string[values.Length + 1];
+                    Array.Copy(values, newValues, values.Length);
+                    newValues[values.Length] = val;
+                    dict[field.Name] = newValues;
+                }
+                else
+                {
+                    dict[field.Name] = new[] { val };
+                }
+            }
+            yield return dict;
+        }
     }
 
     private Document CreateDocument(IUpdateEntry entry)

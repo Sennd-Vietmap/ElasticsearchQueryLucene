@@ -8,7 +8,10 @@
     <PackageReference Include="Lucene.Net" Version="4.8.0-beta00017" />
     <PackageReference Include="Lucene.Net.Analysis.Common" Version="4.8.0-beta00017" />
     <PackageReference Include="Lucene.Net.QueryParser" Version="4.8.0-beta00017" />
+    <PackageReference Include="Microsoft.AspNetCore.Http.Abstractions" Version="2.3.9" />
+    <PackageReference Include="Microsoft.AspNetCore.Routing.Abstractions" Version="2.3.9" />
     <PackageReference Include="Microsoft.EntityFrameworkCore" Version="10.0.2" />
+    <PackageReference Include="Microsoft.Extensions.Logging" Version="10.0.2" />
   </ItemGroup>
 
   <PropertyGroup>
@@ -17,7 +20,7 @@
     <Nullable>enable</Nullable>
     <PackageId>ElasticsearchQueryLucene.EntityFrameworkCore</PackageId>
     <Title>ElasticsearchQueryLucene EntityFrameworkCore Provider</Title>
-    <Version>2.0.1</Version>
+    <Version>2.0.2</Version>
     <Authors>Sennd-Vietmap</Authors>
     <Description>A robust Entity Framework Core provider for Lucene.Net 4.8. Enabling full ORM capabilities (LINQ, Change Tracking, Paging) over Lucene indexes.</Description>
     <PackageTags>ElasticsearchQueryLucene;EFCore;EntityFramework;lucene;search;orm;query</PackageTags>

@@ -14,6 +14,8 @@ using Microsoft.EntityFrameworkCore.ChangeTracking.Internal;
 using Microsoft.EntityFrameworkCore.Infrastructure;
 using System.Text.RegularExpressions;
 using Microsoft.EntityFrameworkCore.Storage;
+using Microsoft.Extensions.Logging;
+using System.Diagnostics;
 
 namespace ElasticsearchQueryLucene.EntityFrameworkCore.Query;
 
@@ -347,11 +349,22 @@ public class LuceneShapedQueryCompilingExpressionVisitor : ShapedQueryCompilingE
             // If parsing fails, use MatchAllDocsQuery
             query = new MatchAllDocsQuery();
         }
+        var loggerFactory = queryContext.Context.GetService<ILoggerFactory>();
+        var logger = loggerFactory?.CreateLogger("ElasticsearchQueryLucene.Query");
+        var stopwatch = Stopwatch.StartNew();
 
         if (isCount)
         {
-             var totalHits = searcher.Search(query, 1).TotalHits;
-             yield return new object[] { totalHits };
+             var totalHitsResult = searcher.Search(query, 1).TotalHits;
+             stopwatch.Stop();
+             
+             if (logger?.IsEnabled(LogLevel.Information) == true)
+             {
+                 logger.LogInformation("Executing Lucene Count Query: {Query}", query);
+                 logger.LogInformation("Lucene search completed in {Elapsed}ms. Total Hits: {Count}", stopwatch.ElapsedMilliseconds, totalHitsResult);
+             }
+
+             yield return new object[] { totalHitsResult };
              yield break;
         }
 
@@ -380,6 +393,15 @@ public class LuceneShapedQueryCompilingExpressionVisitor : ShapedQueryCompilingE
             sort = new Sort(sortFieldList.ToArray());
         }
 
+        if (logger?.IsEnabled(LogLevel.Information) == true)
+        {
+            logger.LogInformation("Executing Lucene Query: {Query}", query);
+            if (sort != null)
+            {
+                logger.LogInformation("Sort Criteria: {Sort}", sort);
+            }
+        }
+
         // Execute the search
         var maxResults = (skip ?? 0) + (take ?? 1000);
         TopDocs topDocs;
@@ -391,6 +413,13 @@ public class LuceneShapedQueryCompilingExpressionVisitor : ShapedQueryCompilingE
         else
         {
             topDocs = searcher.Search(query, maxResults);
+        }
+
+        stopwatch.Stop();
+        if (logger?.IsEnabled(LogLevel.Information) == true)
+        {
+             logger.LogInformation("Lucene search completed in {Elapsed}ms. Hits found: {Count}", 
+                stopwatch.ElapsedMilliseconds, topDocs.TotalHits);
         }
 
         // Apply skip/take (materialization limits)

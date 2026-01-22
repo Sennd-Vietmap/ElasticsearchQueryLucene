@@ -2,6 +2,14 @@
 
 All notable changes to this project will be documented in this file.
 
+## [2.0.2] - 2026-01-23
+
+### Added
+- **Developer Experience (DX) Pack**:
+    - **Diagnostic Logging**: Integrated `Microsoft.Extensions.Logging` to expose raw Lucene queries, sort criteria, and execution time directly in the console/logs.
+    - **Lucene Explorer Dashboard**: New ASP.NET Core Middleware (`UseLuceneExplorer`) that provides a web UI to browse indexes and a "Search Playground" to test raw queries.
+    - **Field Boosting**: Added `.Boost()` LINQ extension (via `EF.Functions.Boost`) to influence search relevance by weighting specific fields.
+
 ## [2.0.1] - 2026-01-22
 
 ### Fixed
