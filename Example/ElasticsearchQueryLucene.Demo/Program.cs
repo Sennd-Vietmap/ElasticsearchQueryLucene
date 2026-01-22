@@ -168,8 +168,17 @@ public class Program
         // Verify Delete
         using (var context = new PetContext(options))
         {
-            var count = context.Pets.ToList().Count;
+            var count = context.Pets.Count();
             Console.WriteLine($"   Total Pets Remaining: {count} (Expected 3)");
+
+            var any = context.Pets.Any(p => p.Name == "Rex");
+            Console.WriteLine($"   Any Check (Rex): {any} (Expected True)");
+
+            var notAny = context.Pets.Any(p => p.Name == "Polly");
+            Console.WriteLine($"   Any Check (Polly): {notAny} (Expected False - Deleted)");
+
+            var longCount = context.Pets.LongCount();
+            Console.WriteLine($"   Long Count: {longCount} (Expected 3)");
         }
         
         Console.WriteLine("\nDemo Complete! 🚀");

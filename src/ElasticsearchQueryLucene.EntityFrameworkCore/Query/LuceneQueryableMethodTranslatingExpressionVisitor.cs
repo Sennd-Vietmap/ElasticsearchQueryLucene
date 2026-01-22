@@ -117,7 +117,8 @@ public class LuceneQueryableMethodTranslatingExpressionVisitor : QueryableMethod
         if (source.QueryExpression is LuceneQueryExpression luceneQuery)
         {
             var newQueryExpression = luceneQuery.WithTake(1);
-            return source.Update(newQueryExpression, source.ShaperExpression);
+            var cardinality = returnDefaultOnEmpty ? ResultCardinality.SingleOrDefault : ResultCardinality.Single;
+            return new ShapedQueryExpression(newQueryExpression, source.ShaperExpression).UpdateResultCardinality(cardinality);
         }
 
         return null;
@@ -138,12 +139,56 @@ public class LuceneQueryableMethodTranslatingExpressionVisitor : QueryableMethod
 
     // Stub implementations for unsupported operations (will be implemented in later phases)
     protected override ShapedQueryExpression? TranslateAll(ShapedQueryExpression source, LambdaExpression predicate) => null;
-    protected override ShapedQueryExpression? TranslateAny(ShapedQueryExpression source, LambdaExpression? predicate) => null;
-    protected override ShapedQueryExpression? TranslateAverage(ShapedQueryExpression source, LambdaExpression selector, Type resultType) => null;
-    protected override ShapedQueryExpression? TranslateCast(ShapedQueryExpression source, Type castType) => null;
-    protected override ShapedQueryExpression? TranslateConcat(ShapedQueryExpression source1, ShapedQueryExpression source2) => null;
-    protected override ShapedQueryExpression? TranslateContains(ShapedQueryExpression source, Expression item) => null;
-    protected override ShapedQueryExpression? TranslateCount(ShapedQueryExpression source, LambdaExpression? predicate) => null;
+    protected override ShapedQueryExpression? TranslateAny(ShapedQueryExpression source, LambdaExpression? predicate)
+    {
+        if (predicate != null)
+        {
+            source = TranslateWhere(source, predicate) ?? source;
+        }
+
+        if (source.QueryExpression is LuceneQueryExpression luceneQuery)
+        {
+            var newQueryExpression = luceneQuery.WithCount();
+            
+            // Shaper: (object[] vals) => ((int)vals[0]) > 0
+            var parameter = Expression.Parameter(typeof(object[]), "values");
+            var shaper = Expression.Lambda(
+                Expression.GreaterThan(
+                    Expression.Convert(
+                        Expression.ArrayIndex(parameter, Expression.Constant(0)),
+                        typeof(int)),
+                    Expression.Constant(0)),
+                parameter);
+
+            return new ShapedQueryExpression(newQueryExpression, shaper).UpdateResultCardinality(ResultCardinality.Single);
+        }
+        return null;
+    }
+
+    protected override ShapedQueryExpression? TranslateCount(ShapedQueryExpression source, LambdaExpression? predicate)
+    {
+         if (predicate != null)
+        {
+            source = TranslateWhere(source, predicate) ?? source;
+        }
+
+        if (source.QueryExpression is LuceneQueryExpression luceneQuery)
+        {
+            var newQueryExpression = luceneQuery.WithCount();
+            
+            // Shaper: (object[] vals) => (int)vals[0]
+            var parameter = Expression.Parameter(typeof(object[]), "values");
+            var shaper = Expression.Lambda(
+                Expression.Convert(
+                    Expression.ArrayIndex(parameter, Expression.Constant(0)),
+                    typeof(int)),
+                parameter);
+
+            return new ShapedQueryExpression(newQueryExpression, shaper).UpdateResultCardinality(ResultCardinality.Single);
+        }
+        return null;
+    }
+
     protected override ShapedQueryExpression? TranslateDefaultIfEmpty(ShapedQueryExpression source, Expression? defaultValue) => null;
     protected override ShapedQueryExpression? TranslateDistinct(ShapedQueryExpression source) => null;
     protected override ShapedQueryExpression? TranslateElementAtOrDefault(ShapedQueryExpression source, Expression index, bool returnDefaultOnEmpty) => null;
@@ -154,7 +199,32 @@ public class LuceneQueryableMethodTranslatingExpressionVisitor : QueryableMethod
     protected override ShapedQueryExpression? TranslateJoin(ShapedQueryExpression outer, ShapedQueryExpression inner, LambdaExpression outerKeySelector, LambdaExpression innerKeySelector, LambdaExpression resultSelector) => null;
     protected override ShapedQueryExpression? TranslateLastOrDefault(ShapedQueryExpression source, LambdaExpression? predicate, Type returnType, bool returnDefaultOnEmpty) => null;
     protected override ShapedQueryExpression? TranslateLeftJoin(ShapedQueryExpression outer, ShapedQueryExpression inner, LambdaExpression outerKeySelector, LambdaExpression innerKeySelector, LambdaExpression resultSelector) => null;
-    protected override ShapedQueryExpression? TranslateLongCount(ShapedQueryExpression source, LambdaExpression? predicate) => null;
+    
+    protected override ShapedQueryExpression? TranslateLongCount(ShapedQueryExpression source, LambdaExpression? predicate)
+    {
+        if (predicate != null)
+        {
+            source = TranslateWhere(source, predicate) ?? source;
+        }
+
+        if (source.QueryExpression is LuceneQueryExpression luceneQuery)
+        {
+            var newQueryExpression = luceneQuery.WithCount();
+            
+            // Shaper: (object[] vals) => (long)((int)vals[0])
+            var parameter = Expression.Parameter(typeof(object[]), "values");
+            var shaper = Expression.Lambda(
+                Expression.Convert(
+                    Expression.Convert(
+                        Expression.ArrayIndex(parameter, Expression.Constant(0)),
+                        typeof(int)),
+                    typeof(long)),
+                parameter);
+
+            return new ShapedQueryExpression(newQueryExpression, shaper).UpdateResultCardinality(ResultCardinality.Single);
+        }
+        return null;
+    }
     protected override ShapedQueryExpression? TranslateMax(ShapedQueryExpression source, LambdaExpression selector, Type resultType) => null;
     protected override ShapedQueryExpression? TranslateMin(ShapedQueryExpression source, LambdaExpression selector, Type resultType) => null;
     protected override ShapedQueryExpression? TranslateOfType(ShapedQueryExpression source, Type ofType) => null;
@@ -207,4 +277,24 @@ public class LuceneQueryableMethodTranslatingExpressionVisitor : QueryableMethod
     protected override ShapedQueryExpression? TranslateSum(ShapedQueryExpression source, LambdaExpression selector, Type resultType) => null;
     protected override ShapedQueryExpression? TranslateTakeWhile(ShapedQueryExpression source, LambdaExpression predicate) => null;
     protected override ShapedQueryExpression? TranslateUnion(ShapedQueryExpression source1, ShapedQueryExpression source2) => null;
+
+    protected override ShapedQueryExpression? TranslateAverage(ShapedQueryExpression source, LambdaExpression? selector, Type resultType)
+    {
+        throw new NotImplementedException();
+    }
+
+    protected override ShapedQueryExpression? TranslateCast(ShapedQueryExpression source, Type castType)
+    {
+        throw new NotImplementedException();
+    }
+
+    protected override ShapedQueryExpression? TranslateConcat(ShapedQueryExpression source1, ShapedQueryExpression source2)
+    {
+        throw new NotImplementedException();
+    }
+
+    protected override ShapedQueryExpression? TranslateContains(ShapedQueryExpression source, Expression item)
+    {
+        throw new NotImplementedException();
+    }
 }

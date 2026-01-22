@@ -14,14 +14,21 @@ public class LuceneQueryExpression : Expression, IPrintableExpression
         string? luceneQueryString = null,
         int? skip = null,
         int? take = null,
-        System.Collections.Generic.IReadOnlyList<(string Field, bool Ascending)>? sortFields = null)
+        System.Collections.Generic.IReadOnlyList<(string Field, bool Ascending)>? sortFields = null,
+        bool isCount = false)
     {
         EntityType = entityType;
         LuceneQueryString = luceneQueryString ?? "*:*"; // Default to match all
         Skip = skip;
         Take = take;
         SortFields = sortFields ?? new System.Collections.Generic.List<(string Field, bool Ascending)>();
+        IsCount = isCount;
     }
+
+    public bool IsCount { get; }
+
+    public LuceneQueryExpression WithCount()
+        => new LuceneQueryExpression(EntityType, LuceneQueryString, Skip, Take, SortFields, true);
 
     public override Type Type => typeof(IEnumerable<object[]>);
     public override ExpressionType NodeType => ExpressionType.Extension;

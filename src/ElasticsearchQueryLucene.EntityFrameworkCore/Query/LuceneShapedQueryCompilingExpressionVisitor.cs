@@ -21,6 +21,16 @@ public class LuceneShapedQueryCompilingExpressionVisitor : ShapedQueryCompilingE
     {
     }
 
+    protected override Expression VisitExtension(Expression extensionExpression)
+    {
+        if (extensionExpression is ShapedQueryExpression shapedQueryExpression)
+        {
+            return VisitShapedQuery(shapedQueryExpression);
+        }
+
+        return base.VisitExtension(extensionExpression);
+    }
+
     protected override Expression VisitShapedQuery(ShapedQueryExpression shapedQueryExpression)
     {
         if (shapedQueryExpression.QueryExpression is not LuceneQueryExpression luceneQuery)
@@ -49,7 +59,8 @@ public class LuceneShapedQueryCompilingExpressionVisitor : ShapedQueryCompilingE
             Expression.Constant(luceneQuery.Take, typeof(int?)),
             Expression.Constant(sortFieldsStr),
             Expression.Constant(sortAscending),
-            Expression.Constant(luceneQuery.EntityType, typeof(Microsoft.EntityFrameworkCore.Metadata.IEntityType)));
+            Expression.Constant(luceneQuery.EntityType, typeof(Microsoft.EntityFrameworkCore.Metadata.IEntityType)),
+            Expression.Constant(luceneQuery.IsCount));
 
         // Apply Shaper: IEnumerable<object[]> -> IEnumerable<TEntity>
         var shaper = (LambdaExpression)shapedQueryExpression.ShaperExpression;
@@ -63,6 +74,23 @@ public class LuceneShapedQueryCompilingExpressionVisitor : ShapedQueryCompilingE
         var shapedCall = Expression.Call(selectMethod, executeCall, Expression.Constant(shaperDelegate));
 
         // Return the body directly. Do NOT wrap in Expression.Lambda as the caller will do that.
+        if (shapedQueryExpression.ResultCardinality == ResultCardinality.Single)
+        {
+             var singleMethod = typeof(Enumerable).GetMethods()
+                .First(m => m.Name == "Single" && m.GetParameters().Length == 1)
+                .MakeGenericMethod(shaper.ReturnType);
+            
+             return Expression.Call(singleMethod, shapedCall);
+        }
+        else if (shapedQueryExpression.ResultCardinality == ResultCardinality.SingleOrDefault)
+        {
+             var singleOrDefaultMethod = typeof(Enumerable).GetMethods()
+                .First(m => m.Name == "SingleOrDefault" && m.GetParameters().Length == 1)
+                .MakeGenericMethod(shaper.ReturnType);
+            
+             return Expression.Call(singleOrDefaultMethod, shapedCall);
+        }
+
         return shapedCall;
     }
 
@@ -74,7 +102,8 @@ public class LuceneShapedQueryCompilingExpressionVisitor : ShapedQueryCompilingE
         int? take,
         string[] sortFields,
         bool[] sortAscending,
-        Microsoft.EntityFrameworkCore.Metadata.IEntityType entityType)
+        Microsoft.EntityFrameworkCore.Metadata.IEntityType entityType,
+        bool isCount)
     {
         // Get the Lucene directory from the context
         var luceneContext = queryContext as LuceneQueryContext;
@@ -122,6 +151,13 @@ public class LuceneShapedQueryCompilingExpressionVisitor : ShapedQueryCompilingE
         {
             // If parsing fails, use MatchAllDocsQuery
             query = new MatchAllDocsQuery();
+        }
+
+        if (isCount)
+        {
+             var totalHits = searcher.Search(query, 1).TotalHits;
+             yield return new object[] { totalHits };
+             yield break;
         }
 
         // Prepare Sort

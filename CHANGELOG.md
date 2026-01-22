@@ -2,6 +2,25 @@
 
 All notable changes to this project will be documented in this file.
 
+## [1.4.0] - 2026-01-22
+
+### Added
+- **Aggregations Support**:
+    - Implemented `Count()`, `LongCount()`, and `Any()` LINQ translation.
+    - Optimized `Count/Any` execution to use Lucene's `TotalHits` (metadata only) avoiding document materialization.
+- **Improved Result Cardinality Handling**:
+    - Implemented `TranslateFirstOrDefault` with correct `ResultCardinality.Single` or `ResultCardinality.SingleOrDefault`.
+    - Updated execution visitor to wrap queries with `Enumerable.Single()` or `SingleOrDefault()` based on cardinality.
+- **Demo Enhancements**:
+    - Added verification steps for Aggregations and FirstOrDefault.
+    - Verified end-to-end functionality including Updates and Deletes with correct state persistence.
+
+### Fixed
+- **Runtime Type Mismatch**:
+    - Resolved `ArgumentException: The type Pet does not represent a sequence` by overriding `VisitExtension` in `LuceneShapedQueryCompilingExpressionVisitor` to bypass incorrect base validation for scalar results.
+- **Pipeline Stability**:
+    - Fixed `ValueBuffer` vs `object[]` transport issues in the query pipeline.
+
 ## [1.3.0] - 2026-01-21
 
 ### Added
