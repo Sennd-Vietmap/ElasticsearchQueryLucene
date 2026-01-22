@@ -127,6 +127,16 @@ public class Program
                 .Where(p => EF.Functions.LuceneMatch(p.Description, "inteligent~"))
                 .ToList();
             PrintPets(fuzzyResults);
+
+            // E. Projection Search
+            Console.WriteLine("   E. Projection (Name and Age only):");
+            var projections = context.Pets
+                .Select(p => new { p.Name, p.Age })
+                .ToList();
+            foreach (var p in projections)
+            {
+                Console.WriteLine($"      - {p.Name} ({p.Age}yo)");
+            }
         }
 
         // 3. UPDATE

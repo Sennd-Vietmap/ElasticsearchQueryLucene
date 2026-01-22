@@ -1,3 +1,5 @@
+using Microsoft.EntityFrameworkCore.Metadata;
+using Microsoft.EntityFrameworkCore.Storage;
 using System.Linq.Expressions;
 using System.Text;
 
@@ -8,13 +10,21 @@ namespace ElasticsearchQueryLucene.EntityFrameworkCore.Query;
 /// </summary>
 public class LuceneExpressionTranslator : ExpressionVisitor
 {
+    private readonly ITypeMappingSource _typeMappingSource;
     private readonly StringBuilder _queryBuilder = new();
     private string? _currentFieldName;
+    private IProperty? _currentProperty;
+
+    public LuceneExpressionTranslator(ITypeMappingSource typeMappingSource)
+    {
+        _typeMappingSource = typeMappingSource;
+    }
 
     public string Translate(Expression expression)
     {
         _queryBuilder.Clear();
         _currentFieldName = null;
+        _currentProperty = null;
         Visit(expression);
         return _queryBuilder.ToString();
     }
@@ -68,6 +78,13 @@ public class LuceneExpressionTranslator : ExpressionVisitor
         if (node.Expression?.NodeType == ExpressionType.Parameter)
         {
             _currentFieldName = node.Member.Name;
+            
+            // Try to find the actual IProperty if we can reach the EntityType
+            if (node.Expression is ParameterExpression param)
+            {
+                 // This is tricky without the IEntityType. 
+                 // For now, we will rely on finding mapping by Type in GetTranslatedValue.
+            }
         }
         return node;
     }
@@ -87,7 +104,7 @@ public class LuceneExpressionTranslator : ExpressionVisitor
             var value = GetValue(node.Arguments[0]);
             
             // StandardAnalyzer lowercases tokens. Wildcard queries are NOT analyzed, so we must manually lowercase to match.
-            var stringValue = value?.ToString()?.ToLowerInvariant();
+            var stringValue = GetTranslatedValue(value)?.ToLowerInvariant();
 
             _queryBuilder.Append($"{_currentFieldName}:*{EscapeValue(stringValue)}*");
         }
@@ -95,13 +112,13 @@ public class LuceneExpressionTranslator : ExpressionVisitor
         {
             Visit(node.Object);
             var value = GetValue(node.Arguments[0]);
-            _queryBuilder.Append($"{_currentFieldName}:{EscapeValue(value)}*");
+            _queryBuilder.Append($"{_currentFieldName}:{GetTranslatedValue(value)}*");
         }
         else if (node.Method.Name == "EndsWith" && node.Object != null)
         {
             Visit(node.Object);
             var value = GetValue(node.Arguments[0]);
-            _queryBuilder.Append($"{_currentFieldName}:*{EscapeValue(value)}");
+            _queryBuilder.Append($"{_currentFieldName}:*{GetTranslatedValue(value)}");
         }
         else if (node.Method.Name == "LuceneMatch" && node.Method.DeclaringType?.Name == "LuceneDbFunctionsExtensions")
         {
@@ -122,7 +139,7 @@ public class LuceneExpressionTranslator : ExpressionVisitor
     {
         Visit(node.Left);
         var value = GetValue(node.Right);
-        var escaped = EscapeValue(value);
+        var escaped = GetTranslatedValue(value);
         if (value is string)
         {
              escaped = $"\"{escaped}\"";
@@ -134,7 +151,21 @@ public class LuceneExpressionTranslator : ExpressionVisitor
     {
         Visit(node.Left);
         var value = GetValue(node.Right);
-        _queryBuilder.Append($"{_currentFieldName}:{prefix}{EscapeValue(value)} {suffix}");
+        _queryBuilder.Append($"{_currentFieldName}:{prefix}{GetTranslatedValue(value)} {suffix}");
+    }
+
+    private string GetTranslatedValue(object? value)
+    {
+        if (value == null) return "null";
+
+        // Find mapping for the value type
+        var mapping = _typeMappingSource.FindMapping(value.GetType());
+        if (mapping != null && mapping.Converter != null)
+        {
+             value = mapping.Converter.ConvertToProvider(value);
+        }
+
+        return EscapeValue(value);
     }
 
     private static object? GetValue(Expression expression)

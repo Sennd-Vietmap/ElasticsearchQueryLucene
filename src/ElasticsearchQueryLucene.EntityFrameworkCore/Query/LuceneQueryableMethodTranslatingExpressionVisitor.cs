@@ -7,19 +7,22 @@ namespace ElasticsearchQueryLucene.EntityFrameworkCore.Query;
 
 public class LuceneQueryableMethodTranslatingExpressionVisitor : QueryableMethodTranslatingExpressionVisitor
 {
-    private readonly LuceneExpressionTranslator _translator = new();
+    private readonly LuceneExpressionTranslator _translator;
 
     public LuceneQueryableMethodTranslatingExpressionVisitor(
         QueryableMethodTranslatingExpressionVisitorDependencies dependencies,
-        QueryCompilationContext queryCompilationContext)
+        QueryCompilationContext queryCompilationContext,
+        Microsoft.EntityFrameworkCore.Storage.ITypeMappingSource typeMappingSource)
         : base(dependencies, queryCompilationContext, subquery: false)
     {
+        _translator = new LuceneExpressionTranslator(typeMappingSource);
     }
 
     protected LuceneQueryableMethodTranslatingExpressionVisitor(
         LuceneQueryableMethodTranslatingExpressionVisitor visitor)
         : base(visitor.Dependencies, visitor.QueryCompilationContext, subquery: true)
     {
+        _translator = visitor._translator;
     }
 
     protected override ShapedQueryExpression CreateShapedQueryExpression(IEntityType entityType)
@@ -126,15 +129,70 @@ public class LuceneQueryableMethodTranslatingExpressionVisitor : QueryableMethod
 
     protected override ShapedQueryExpression? TranslateSelect(ShapedQueryExpression source, LambdaExpression selector)
     {
-        // For Phase 5, we only support identity projection (selecting the entity itself)
-        // Full projection support will come in Phase 7
+        if (source.QueryExpression is not LuceneQueryExpression luceneQuery)
+            return null;
+
+        // If it's an identity projection (p => p), just return the source.
         if (selector.Body == selector.Parameters[0])
         {
             return source;
         }
 
-        // For now, return null for complex projections
-        return null;
+        // We need to rewrite the selector to use an object[] parameter instead of the entity parameter.
+        // Current shaper: (object[] values) => new Pet { ... }
+        // New selector: (Pet p) => new { p.Name, p.Age }
+        // Result shaper: (object[] values) => { var p = source_shaper(values); return new { p.Name, p.Age }; }
+
+        // Better approach: Inline the source shaper into the new selector.
+        // Or even better: if the selector accesses properties of Pet, map them directly to the object[] buffer.
+
+        var shaperLambdaExpression = (LambdaExpression)source.ShaperExpression;
+        var visitor = new LuceneProjectionShaperExpressionVisitor(
+            luceneQuery.EntityType, 
+            shaperLambdaExpression.Parameters[0]);
+        
+        var rewrittenSelectorBody = visitor.Visit(selector.Body);
+        var shaperLambda = Expression.Lambda(rewrittenSelectorBody, shaperLambdaExpression.Parameters[0]);
+
+        return source.Update(luceneQuery, shaperLambda);
+    }
+
+    private class LuceneProjectionShaperExpressionVisitor : ExpressionVisitor
+    {
+        private readonly IEntityType _entityType;
+        private readonly ParameterExpression _valueBufferParameter;
+        private readonly List<IProperty> _properties;
+
+        public LuceneProjectionShaperExpressionVisitor(IEntityType entityType, ParameterExpression valueBufferParameter)
+        {
+            _entityType = entityType;
+            _valueBufferParameter = valueBufferParameter;
+            _properties = entityType.GetProperties().ToList();
+        }
+
+        protected override Expression VisitMember(MemberExpression node)
+        {
+            if (node.Expression is ParameterExpression param && param.Type == _entityType.ClrType)
+            {
+                // Property access on the entity parameter
+                var property = _entityType.FindProperty(node.Member.Name);
+                if (property != null)
+                {
+                    var index = _properties.IndexOf(property);
+                    if (index != -1)
+                    {
+                        var arrayAccess = Expression.ArrayIndex(
+                            _valueBufferParameter,
+                            Expression.Constant(index)
+                        );
+
+                        return Expression.Convert(arrayAccess, node.Type);
+                    }
+                }
+            }
+
+            return base.VisitMember(node);
+        }
     }
 
     // Stub implementations for unsupported operations (will be implemented in later phases)
