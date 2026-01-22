@@ -22,7 +22,7 @@ var app = builder.Build();
 app.UseLuceneExplorer<DemoContext>("/diagnostics/lucene");
 
 // 3. API Endpoints
-app.MapGet("/", () => "🚀 Lucene DX Pack Web Demo. Go to /diagnostics/lucene for the dashboard.");
+app.MapGet("/", () => "🚀 Lucene DX Pack Web Demo. \n- Dashboard: /diagnostics/lucene \n- Guide: See Example/ElasticsearchQueryLucene.WebDemo/GUIDE.md");
 
 app.MapPost("/seed", async (DemoContext db) =>
 {
