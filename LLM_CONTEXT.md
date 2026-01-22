@@ -15,6 +15,8 @@
     *   `BooleanExpression` (&&, ||) -> `BooleanQuery` (MUST, SHOULD).
     *   `OrderBy` -> `SortField` (INT32/64, SINGLE, DOUBLE, STRING).
     *   **Aggregations**: `Count()` using `TotalHits`, `Any()`.
+    *   **Metadata**: Support for `DateTime` (Ticks) and `Guid` via `ValueConverter`.
+    *   **Parameters**: Dynamic resolution via `@@NAME@@` placeholders.
 
 ### 2. Inverted Index Management (CRUD)
 *   **Write Pipeline**: Integrated with `DbContext.SaveChanges()`.
@@ -44,7 +46,7 @@
 *   **Pattern**: Repository / Unit of Work (via DbContext).
 *   **Dependency Injection**: `IServiceCollection` extension via `UseLucene()`.
 *   **Metadata**: Fluent API `IsStored()`, `IsTokenized()` & Data Annotations `[LuceneField]`.
-*   **Version Compatibility**: .NET 8.0, EF Core 10.0.0, Lucene.Net 4.8.0-beta.
+*   **Version Compatibility**: .NET 10.0, EF Core 10.0.0, Lucene.Net 4.8.0-beta.
 
 ## Usage vector
 Ideal for: RAG (Retrieval-Augmented Generation) Knowledge Base, Local Full-Text Search, NoSQL Document Storage, High-Speed Filtering.

@@ -1,4 +1,5 @@
 using Microsoft.EntityFrameworkCore.Metadata;
+using Microsoft.EntityFrameworkCore.Query;
 using Microsoft.EntityFrameworkCore.Storage;
 using System.Linq.Expressions;
 using System.Text;
@@ -158,6 +159,11 @@ public class LuceneExpressionTranslator : ExpressionVisitor
     {
         if (value == null) return "null";
 
+        if (value is string s && s.StartsWith("@@") && s.EndsWith("@@"))
+        {
+            return s; // Placeholder for QueryParameterExpression
+        }
+
         // Find mapping for the value type
         var mapping = _typeMappingSource.FindMapping(value.GetType());
         if (mapping != null && mapping.Converter != null)
@@ -168,11 +174,16 @@ public class LuceneExpressionTranslator : ExpressionVisitor
         return EscapeValue(value);
     }
 
-    private static object? GetValue(Expression expression)
+    private object? GetValue(Expression expression)
     {
         if (expression is ConstantExpression constant)
         {
             return constant.Value;
+        }
+
+        if (expression.NodeType == ExpressionType.Extension && expression is QueryParameterExpression qp)
+        {
+            return $"@@{qp.Name}@@";
         }
 
         // Generic fallback: Attempt to evaluate the expression by compiling it.

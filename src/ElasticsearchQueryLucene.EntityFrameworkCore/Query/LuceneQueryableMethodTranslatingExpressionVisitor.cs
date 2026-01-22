@@ -91,10 +91,7 @@ public class LuceneQueryableMethodTranslatingExpressionVisitor : QueryableMethod
         if (source.QueryExpression is not LuceneQueryExpression luceneQuery)
             return null;
 
-        if (count is not ConstantExpression { Value: int skipCount })
-            return null;
-
-        var newQueryExpression = luceneQuery.WithSkip(skipCount);
+        var newQueryExpression = luceneQuery.WithSkip(count);
         return source.Update(newQueryExpression, source.ShaperExpression);
     }
 
@@ -103,10 +100,7 @@ public class LuceneQueryableMethodTranslatingExpressionVisitor : QueryableMethod
         if (source.QueryExpression is not LuceneQueryExpression luceneQuery)
             return null;
 
-        if (count is not ConstantExpression { Value: int takeCount })
-            return null;
-
-        var newQueryExpression = luceneQuery.WithTake(takeCount);
+        var newQueryExpression = luceneQuery.WithTake(count);
         return source.Update(newQueryExpression, source.ShaperExpression);
     }
 
@@ -119,7 +113,7 @@ public class LuceneQueryableMethodTranslatingExpressionVisitor : QueryableMethod
 
         if (source.QueryExpression is LuceneQueryExpression luceneQuery)
         {
-            var newQueryExpression = luceneQuery.WithTake(1);
+            var newQueryExpression = luceneQuery.WithTake(Expression.Constant(1));
             var cardinality = returnDefaultOnEmpty ? ResultCardinality.SingleOrDefault : ResultCardinality.Single;
             return new ShapedQueryExpression(newQueryExpression, source.ShaperExpression).UpdateResultCardinality(cardinality);
         }

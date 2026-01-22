@@ -12,7 +12,6 @@ using Lucene.Net.Util;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Infrastructure;
 using Microsoft.EntityFrameworkCore.Storage;
-using Microsoft.EntityFrameworkCore.Storage;
 using Microsoft.EntityFrameworkCore.Update;
 
 namespace ElasticsearchQueryLucene.EntityFrameworkCore.Storage;
@@ -121,6 +120,14 @@ public class LuceneDatabase : ILuceneDatabase
             else if (value is double d)
             {
                 doc.Add(new DoubleField(fieldName, d, storeMode));
+            }
+            else if (value is DateTime dt)
+            {
+                doc.Add(new StringField(fieldName, dt.ToString("O"), storeMode));
+            }
+            else if (value is Guid guid)
+            {
+                doc.Add(new StringField(fieldName, guid.ToString(), storeMode));
             }
             else
             {

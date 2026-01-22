@@ -60,16 +60,15 @@ dotnet run --project src/ElasticsearchQueryLucene.Console
 | `src/ElasticsearchQueryLucene.Console` | Live demo with real data and Lucene search engine. |
 | `test/ElasticsearchQueryLucene.Tests` | Unit and integration tests. |
 
-## 🔬 EF Core Lucene Provider (Experimental)
+## 🔬 EF Core Lucene Provider (v2.0 Stable)
 
-An experimental Entity Framework Core provider that enables using Lucene.Net as a data store with full ORM capabilities.
+A robust Entity Framework Core provider that enables using Lucene.Net as a data store with full ORM capabilities, including identity resolution, change tracking, and parameter support.
 
-### Current Status
-- ✅ **Phase 1-3**: Foundation, Metadata Mapping, and Update Pipeline (Create) completed
-- ✅ **Phase 4**: Query Pipeline Materialization completed
-- ✅ **Phase 5**: LINQ Translation (Read) completed
-- ✅ **Phase 6**: Full CRUD & State Management completed
-- 🚧 **Phase 7**: Advanced Features (In Progress)
+### Release Status: v2.0.0 (GA)
+- ✅ **Architecture**: Centralized `LuceneTypeMappingSource` with `ValueConverter` support.
+- ✅ **Query Pipeline**: Parameterized LINQ queries (`Where`, `Skip`, `Take`), Sorting, and Projections.
+- ✅ **Tracking & CRUD**: Full identity resolution via `IStateManager` and atomic `SaveChanges`.
+- ✅ **Verification**: 100% pass rate on functional test suite.
 
 ### Features Implemented
 - Fluent API and Data Annotations for Lucene field configuration

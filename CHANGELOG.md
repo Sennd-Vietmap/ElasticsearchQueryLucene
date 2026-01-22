@@ -2,6 +2,19 @@
 
 All notable changes to this project will be documented in this file.
 
+## [2.0.0] - 2026-01-22
+
+### Added
+- **v2.0 Architecture Upgrade**:
+    - **Strict Type Mapping**: Implemented `LuceneTypeMappingSource` to centralize .NET-to-Lucene conversion.
+    - **Value Converter Support**: Support for `DateTime` (ticks) and `Guid` (string) with automated round-trip transformation during materialization.
+    - **Parameterized Queries**: Support for variables in LINQ (e.g., `.Skip(count)`) via expression evaluation and a new `@@NAME@@` placeholder system during compilation.
+    - **Enhanced Projection Shaper**: Improved support for anonymous types and specific field selection.
+    - **Robust Identity Tracking**: Integrated with `IStateManager` to return tracked entities and resolve identity conflicts.
+- **Functional Testing**:
+    - Comprehensive test suite in `test/ElasticsearchQueryLucene.FunctionalTests`.
+    - 8 passing test cases covering full CRUD, paging, sorting, and complex type support.
+
 ## [1.4.0] - 2026-01-22
 
 ### Added

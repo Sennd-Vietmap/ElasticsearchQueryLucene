@@ -12,8 +12,8 @@ public class LuceneQueryExpression : Expression, IPrintableExpression
     public LuceneQueryExpression(
         Microsoft.EntityFrameworkCore.Metadata.IEntityType entityType,
         string? luceneQueryString = null,
-        int? skip = null,
-        int? take = null,
+        Expression? skip = null,
+        Expression? take = null,
         System.Collections.Generic.IReadOnlyList<(string Field, bool Ascending)>? sortFields = null,
         bool isCount = false)
     {
@@ -34,17 +34,17 @@ public class LuceneQueryExpression : Expression, IPrintableExpression
     public override ExpressionType NodeType => ExpressionType.Extension;
     public Microsoft.EntityFrameworkCore.Metadata.IEntityType EntityType { get; }
     public string LuceneQueryString { get; }
-    public int? Skip { get; }
-    public int? Take { get; }
+    public Expression? Skip { get; }
+    public Expression? Take { get; }
     public System.Collections.Generic.IReadOnlyList<(string Field, bool Ascending)> SortFields { get; }
 
     public LuceneQueryExpression WithLuceneQuery(string luceneQuery)
         => new(EntityType, luceneQuery, Skip, Take, SortFields);
 
-    public LuceneQueryExpression WithSkip(int skip)
+    public LuceneQueryExpression WithSkip(Expression skip)
         => new(EntityType, LuceneQueryString, skip, Take, SortFields);
 
-    public LuceneQueryExpression WithTake(int take)
+    public LuceneQueryExpression WithTake(Expression take)
         => new(EntityType, LuceneQueryString, Skip, take, SortFields);
 
     public LuceneQueryExpression WithSort(string field, bool ascending)
@@ -67,13 +67,17 @@ public class LuceneQueryExpression : Expression, IPrintableExpression
         {
             expressionPrinter.Append($".OrderBy({sort.Field}, {(sort.Ascending ? "asc" : "desc")})");
         }
-        if (Skip.HasValue)
+        if (Skip != null)
         {
-            expressionPrinter.Append($".Skip({Skip})");
+            expressionPrinter.Append(".Skip(");
+            expressionPrinter.Visit(Skip);
+            expressionPrinter.Append(")");
         }
-        if (Take.HasValue)
+        if (Take != null)
         {
-            expressionPrinter.Append($".Take({Take})");
+            expressionPrinter.Append(".Take(");
+            expressionPrinter.Visit(Take);
+            expressionPrinter.Append(")");
         }
     }
 }

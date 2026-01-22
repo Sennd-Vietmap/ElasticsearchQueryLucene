@@ -1,5 +1,8 @@
 using System;
 using System.Linq.Expressions;
+using Microsoft.EntityFrameworkCore.Storage;
+using Microsoft.EntityFrameworkCore.Metadata;
+using System.Reflection;
 using ElasticsearchQueryLucene.EntityFrameworkCore.Query;
 using Xunit;
 
@@ -16,7 +19,7 @@ public class LuceneExpressionTranslatorTests
         public bool IsActive { get; set; }
     }
 
-    private readonly LuceneExpressionTranslator _translator = new();
+    private readonly LuceneExpressionTranslator _translator = new(new MockTypeMappingSource());
 
     [Fact]
     public void Translate_SimpleEquality_ReturnsCorrectQuery()

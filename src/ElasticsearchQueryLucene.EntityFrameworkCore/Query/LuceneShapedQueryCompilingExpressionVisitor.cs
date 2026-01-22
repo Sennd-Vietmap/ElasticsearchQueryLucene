@@ -12,6 +12,8 @@ using Lucene.Net.Analysis.Standard;
 using ElasticsearchQueryLucene.EntityFrameworkCore.Metadata;
 using Microsoft.EntityFrameworkCore.ChangeTracking.Internal;
 using Microsoft.EntityFrameworkCore.Infrastructure;
+using System.Text.RegularExpressions;
+using Microsoft.EntityFrameworkCore.Storage;
 
 namespace ElasticsearchQueryLucene.EntityFrameworkCore.Query;
 
@@ -58,8 +60,8 @@ public class LuceneShapedQueryCompilingExpressionVisitor : ShapedQueryCompilingE
             executeMethod,
             queryContextParameter,
             Expression.Constant(luceneQuery.LuceneQueryString),
-            Expression.Constant(luceneQuery.Skip, typeof(int?)),
-            Expression.Constant(luceneQuery.Take, typeof(int?)),
+            Expression.Constant(luceneQuery.Skip, typeof(Expression)),
+            Expression.Constant(luceneQuery.Take, typeof(Expression)),
             Expression.Constant(sortFieldsStr),
             Expression.Constant(sortAscending),
             Expression.Constant(luceneQuery.EntityType, typeof(Microsoft.EntityFrameworkCore.Metadata.IEntityType)),
@@ -116,15 +118,103 @@ public class LuceneShapedQueryCompilingExpressionVisitor : ShapedQueryCompilingE
         return finalCall;
     }
 
+    private class LuceneQueryParser : Lucene.Net.QueryParsers.Classic.QueryParser
+    {
+        private readonly Microsoft.EntityFrameworkCore.Metadata.IEntityType _entityType;
+
+        public LuceneQueryParser(Lucene.Net.Util.LuceneVersion matchVersion, string f, Lucene.Net.Analysis.Analyzer a, Microsoft.EntityFrameworkCore.Metadata.IEntityType entityType)
+            : base(matchVersion, f, a)
+        {
+            _entityType = entityType;
+        }
+
+        protected override Lucene.Net.Search.Query GetFieldQuery(string field, string queryText, bool quoted)
+        {
+            var p = _entityType.FindProperty(field);
+            if (p != null)
+            {
+                var targetType = Nullable.GetUnderlyingType(p.ClrType) ?? p.ClrType;
+                if (targetType == typeof(int))
+                {
+                    if (int.TryParse(queryText, out var i))
+                    {
+                        return Lucene.Net.Search.NumericRangeQuery.NewInt32Range(field, i, i, true, true);
+                    }
+                }
+                else if (targetType == typeof(long))
+                {
+                    if (long.TryParse(queryText, out var l))
+                    {
+                        return Lucene.Net.Search.NumericRangeQuery.NewInt64Range(field, l, l, true, true);
+                    }
+                }
+                else if (targetType == typeof(float))
+                {
+                    if (float.TryParse(queryText, out var f))
+                    {
+                        return Lucene.Net.Search.NumericRangeQuery.NewSingleRange(field, f, f, true, true);
+                    }
+                }
+                else if (targetType == typeof(double))
+                {
+                    if (double.TryParse(queryText, out var d))
+                    {
+                        return Lucene.Net.Search.NumericRangeQuery.NewDoubleRange(field, d, d, true, true);
+                    }
+                }
+            }
+            return base.GetFieldQuery(field, queryText, quoted);
+        }
+
+        protected override Lucene.Net.Search.Query GetRangeQuery(string field, string part1, string part2, bool startInclusive, bool endInclusive)
+        {
+            var p = _entityType.FindProperty(field);
+            if (p != null)
+            {
+                var targetType = Nullable.GetUnderlyingType(p.ClrType) ?? p.ClrType;
+                if (targetType == typeof(int))
+                {
+                    int? i1 = part1 == "*" ? null : int.TryParse(part1, out var v1) ? v1 : null;
+                    int? i2 = part2 == "*" ? null : int.TryParse(part2, out var v2) ? v2 : null;
+                    return Lucene.Net.Search.NumericRangeQuery.NewInt32Range(field, i1, i2, startInclusive, endInclusive);
+                }
+                else if (targetType == typeof(long))
+                {
+                    long? l1 = part1 == "*" ? null : long.TryParse(part1, out var v1) ? v1 : null;
+                    long? l2 = part2 == "*" ? null : long.TryParse(part2, out var v2) ? v2 : null;
+                    return Lucene.Net.Search.NumericRangeQuery.NewInt64Range(field, l1, l2, startInclusive, endInclusive);
+                }
+                else if (targetType == typeof(float))
+                {
+                    float? f1 = part1 == "*" ? null : float.TryParse(part1, out var v1) ? v1 : null;
+                    float? f2 = part2 == "*" ? null : float.TryParse(part2, out var v2) ? v2 : null;
+                    return Lucene.Net.Search.NumericRangeQuery.NewSingleRange(field, f1, f2, startInclusive, endInclusive);
+                }
+                else if (targetType == typeof(double))
+                {
+                    double? d1 = part1 == "*" ? null : double.TryParse(part1, out var v1) ? v1 : null;
+                    double? d2 = part2 == "*" ? null : double.TryParse(part2, out var v2) ? v2 : null;
+                    return Lucene.Net.Search.NumericRangeQuery.NewDoubleRange(field, d1, d2, startInclusive, endInclusive);
+                }
+            }
+            return base.GetRangeQuery(field, part1, part2, startInclusive, endInclusive);
+        }
+    }
+
     private static IEnumerable<T> TrackEntities<T>(IEnumerable<T> source, QueryContext queryContext, Microsoft.EntityFrameworkCore.Metadata.IEntityType entityType)
     {
+        if (source == null) yield break;
+
         var primaryKey = entityType.FindPrimaryKey();
-#pragma warning disable EF1001 // Internal EF Core API usage
+        // ...
+#pragma warning disable EF1001 // Internal EF Core API usage.
         var stateManager = queryContext.Context.GetService<IStateManager>();
-#pragma warning restore EF1001
+#pragma warning restore EF1001 // Internal EF Core API usage.
+                              // ...
 
         foreach (var entity in source)
         {
+            if (entity == null) continue;
             if (primaryKey == null)
             {
                 yield return entity;
@@ -158,16 +248,57 @@ public class LuceneShapedQueryCompilingExpressionVisitor : ShapedQueryCompilingE
     }
 
 
+    private static int? EvaluateInt(Expression? expression, QueryContext queryContext)
+    {
+        if (expression == null) return null;
+        if (expression is ConstantExpression constant) return (int)constant.Value!;
+        
+        if (expression.NodeType == ExpressionType.Extension && expression is QueryParameterExpression qp)
+        {
+            if (queryContext.Parameters.TryGetValue(qp.Name, out var value))
+            {
+                return (int)value!;
+            }
+        }
+        
+        try
+        {
+            var lambda = Expression.Lambda<Func<int>>(Expression.Convert(expression, typeof(int)));
+            return lambda.Compile()();
+        }
+        catch
+        {
+            return null;
+        }
+    }
+
     private static IEnumerable<object[]> ExecuteLuceneQuery(
         QueryContext queryContext,
         string luceneQueryString,
-        int? skip,
-        int? take,
+        Expression? skipExpression,
+        Expression? takeExpression,
         string[] sortFields,
         bool[] sortAscending,
         Microsoft.EntityFrameworkCore.Metadata.IEntityType entityType,
         bool isCount)
     {
+        var skip = EvaluateInt(skipExpression, queryContext);
+        var take = EvaluateInt(takeExpression, queryContext);
+        // Resolve placeholders in luceneQueryString (e.g., @@name@@)
+        if (luceneQueryString.Contains("@@"))
+        {
+            luceneQueryString = Regex.Replace(luceneQueryString, "@@(.+?)@@", match =>
+            {
+                var paramName = match.Groups[1].Value;
+                if (queryContext.Parameters.TryGetValue(paramName, out var value))
+                {
+                    // Basic formatting for Lucene. For dates, etc., we might need more logic here too.
+                    return value?.ToString() ?? "null";
+                }
+                return match.Value; // Keep if not found (unexpected)
+            });
+        }
+
         // Get the Lucene directory from the context
         var luceneContext = queryContext as LuceneQueryContext;
         if (luceneContext?.Directory == null)
@@ -197,11 +328,12 @@ public class LuceneShapedQueryCompilingExpressionVisitor : ShapedQueryCompilingE
         
         var analyzer = new PerFieldAnalyzerWrapper(defaultAnalyzer, fieldAnalyzers);
 
-        // Parse the Lucene query string
-        var parser = new Lucene.Net.QueryParsers.Classic.QueryParser(
+        // Parse the Lucene query string using our type-aware parser
+        var parser = new LuceneQueryParser(
             Lucene.Net.Util.LuceneVersion.LUCENE_48,
             "_all", 
-            analyzer);
+            analyzer,
+            entityType);
         
         parser.AllowLeadingWildcard = true;
 
@@ -279,18 +411,70 @@ public class LuceneShapedQueryCompilingExpressionVisitor : ShapedQueryCompilingE
             for (int j = 0; j < properties.Count; j++)
             {
                 var prop = properties[j];
+                
+                // Set default value for value types to avoid shaper cast exceptions
+                if (prop.ClrType.IsValueType && Nullable.GetUnderlyingType(prop.ClrType) == null)
+                {
+                    values[j] = Activator.CreateInstance(prop.ClrType)!;
+                }
+
                 var fieldValue = doc.Get(prop.Name);
                 
                 if (fieldValue != null)
                 {
                     try
                     {
-                        var convertedValue = Convert.ChangeType(fieldValue, prop.ClrType);
-                        values[j] = convertedValue;
+                        var typeMappingSource = queryContext.Context.GetService<Microsoft.EntityFrameworkCore.Storage.ITypeMappingSource>();
+                        var mapping = typeMappingSource.FindMapping(prop);
+                        var converter = mapping?.Converter;
+                        var targetType = converter?.ProviderClrType ?? (Nullable.GetUnderlyingType(prop.ClrType) ?? prop.ClrType);
+                        
+                        object? convertedValue;
+                        if (targetType == typeof(bool))
+                        {
+                            convertedValue = bool.Parse(fieldValue);
+                        }
+                        else if (targetType == typeof(int))
+                        {
+                            convertedValue = int.Parse(fieldValue);
+                        }
+                        else if (targetType == typeof(long))
+                        {
+                            convertedValue = long.Parse(fieldValue);
+                        }
+                        else if (targetType == typeof(float))
+                        {
+                            convertedValue = float.Parse(fieldValue);
+                        }
+                        else if (targetType == typeof(double))
+                        {
+                            convertedValue = double.Parse(fieldValue);
+                        }
+                        else if (targetType == typeof(DateTime))
+                        {
+                            convertedValue = DateTime.Parse(fieldValue, null, System.Globalization.DateTimeStyles.RoundtripKind);
+                        }
+                        else if (targetType == typeof(Guid))
+                        {
+                            convertedValue = Guid.Parse(fieldValue);
+                        }
+                        else
+                        {
+                            convertedValue = Convert.ChangeType(fieldValue, targetType);
+                        }
+
+                        if (converter != null && convertedValue != null)
+                        {
+                            values[j] = converter.ConvertFromProvider(convertedValue);
+                        }
+                        else
+                        {
+                            values[j] = convertedValue;
+                        }
                     }
-                    catch
+                    catch (Exception ex)
                     {
-                        // defaults
+                        throw new InvalidOperationException($"Error materializing property '{prop.Name}' from value '{fieldValue}': {ex.Message}", ex);
                     }
                 }
             }

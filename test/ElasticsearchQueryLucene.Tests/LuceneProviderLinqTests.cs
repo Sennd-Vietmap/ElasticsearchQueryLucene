@@ -4,6 +4,9 @@ using System.Linq.Expressions;
 using ElasticsearchQueryLucene.EntityFrameworkCore.Query;
 using Xunit;
 using Microsoft.EntityFrameworkCore;
+using Microsoft.EntityFrameworkCore.Storage;
+using Microsoft.EntityFrameworkCore.Metadata;
+using System.Reflection;
 using ElasticsearchQueryLucene.EntityFrameworkCore.Extensions;
 
 namespace ElasticsearchQueryLucene.Tests;
@@ -23,7 +26,7 @@ public class LuceneProviderLinqTests
         public int Price { get; set; }
     }
 
-    private readonly LuceneExpressionTranslator _translator = new();
+    private readonly LuceneExpressionTranslator _translator = new(new MockTypeMappingSource());
 
     [Fact]
     public void Where_SimpleEquality_TranslatesToLuceneQuery()

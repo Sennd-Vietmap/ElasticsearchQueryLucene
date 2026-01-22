@@ -37,3 +37,6 @@ To support `Select(p => new { ... })`, the query pipeline must rewrite the query
 
 ## 6. Lambda Expression Casting
 The `ShaperExpression` in a `ShapedQueryExpression` is of type `Expression`. However, access to its `Parameters` (necessary for rewriting or wrapping it) requires casting to `LambdaExpression`. Failure to do this during query compilation leads to build errors or runtime failures when trying to manipulate the expression tree.
+
+## 7. Parameter Resolution (EF Core 10)
+Variables in LINQ (like `Where(p => p.Id == id)`) are represented as `QueryParameterExpression`. Since they can't be evaluated during translation, we use a placeholder system (`@@paramName@@`) and resolve them in the execution phase using `QueryContext.Parameters`. Note: In EF 10, the property is `Parameters`, not `ParameterValues`.
