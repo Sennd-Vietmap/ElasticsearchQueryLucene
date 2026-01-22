@@ -4,11 +4,14 @@ using System.Linq;
 using System.Linq.Expressions;
 using Lucene.Net.Index;
 using Lucene.Net.Search;
+using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Query;
 using Lucene.Net.Analysis.Miscellaneous;
 using Lucene.Net.Analysis.Core;
 using Lucene.Net.Analysis.Standard;
 using ElasticsearchQueryLucene.EntityFrameworkCore.Metadata;
+using Microsoft.EntityFrameworkCore.ChangeTracking.Internal;
+using Microsoft.EntityFrameworkCore.Infrastructure;
 
 namespace ElasticsearchQueryLucene.EntityFrameworkCore.Query;
 
@@ -74,13 +77,32 @@ public class LuceneShapedQueryCompilingExpressionVisitor : ShapedQueryCompilingE
         var shapedCall = Expression.Call(selectMethod, executeCall, Expression.Constant(shaperDelegate));
 
         // Return the body directly. Do NOT wrap in Expression.Lambda as the caller will do that.
+        var finalCall = shapedCall;
+
+        // Apply Tracking if needed
+        // Only track if the result type is the Entity type (avoid Count(), Projections, etc.)
+        if (QueryCompilationContext.QueryTrackingBehavior == QueryTrackingBehavior.TrackAll
+            && shaper.ReturnType == luceneQuery.EntityType.ClrType)
+        {
+             var methodInfo = typeof(LuceneShapedQueryCompilingExpressionVisitor)
+                .GetMethod(nameof(TrackEntities), System.Reflection.BindingFlags.Static | System.Reflection.BindingFlags.NonPublic);
+             
+             var trackMethod = methodInfo!.MakeGenericMethod(shaper.ReturnType);
+
+             finalCall = Expression.Call(
+                trackMethod, 
+                shapedCall, 
+                queryContextParameter,
+                Expression.Constant(luceneQuery.EntityType));
+        }
+
         if (shapedQueryExpression.ResultCardinality == ResultCardinality.Single)
         {
              var singleMethod = typeof(Enumerable).GetMethods()
                 .First(m => m.Name == "Single" && m.GetParameters().Length == 1)
                 .MakeGenericMethod(shaper.ReturnType);
             
-             return Expression.Call(singleMethod, shapedCall);
+             return Expression.Call(singleMethod, finalCall);
         }
         else if (shapedQueryExpression.ResultCardinality == ResultCardinality.SingleOrDefault)
         {
@@ -88,10 +110,51 @@ public class LuceneShapedQueryCompilingExpressionVisitor : ShapedQueryCompilingE
                 .First(m => m.Name == "SingleOrDefault" && m.GetParameters().Length == 1)
                 .MakeGenericMethod(shaper.ReturnType);
             
-             return Expression.Call(singleOrDefaultMethod, shapedCall);
+             return Expression.Call(singleOrDefaultMethod, finalCall);
         }
 
-        return shapedCall;
+        return finalCall;
+    }
+
+    private static IEnumerable<T> TrackEntities<T>(IEnumerable<T> source, QueryContext queryContext, Microsoft.EntityFrameworkCore.Metadata.IEntityType entityType)
+    {
+        var primaryKey = entityType.FindPrimaryKey();
+#pragma warning disable EF1001 // Internal EF Core API usage
+        var stateManager = queryContext.Context.GetService<IStateManager>();
+#pragma warning restore EF1001
+
+        foreach (var entity in source)
+        {
+            if (primaryKey == null)
+            {
+                yield return entity;
+                continue;
+            }
+
+            // Identity Resolution
+            var keyValues = new object?[primaryKey.Properties.Count];
+            for(int i=0; i<primaryKey.Properties.Count; i++)
+            {
+                keyValues[i] = primaryKey.Properties[i].GetGetter().GetClrValue(entity);
+            }
+
+#pragma warning disable EF1001
+            var entry = stateManager.TryGetEntry(primaryKey, keyValues!);
+#pragma warning restore EF1001
+
+            if (entry != null)
+            {
+                yield return (T)entry.Entity;
+            }
+            else
+            {
+                // Not tracked? Attach.
+                // We use Attach because if we just return the new instance, EF doesn't know about it.
+                // But since we checked StateManager, we know it's not tracked.
+                queryContext.Context.Attach(entity);
+                yield return entity;
+            }
+        }
     }
 
 
